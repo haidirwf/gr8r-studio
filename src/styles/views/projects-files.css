@@ -3,13 +3,14 @@
    ============================================================ */
 .pgrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 16px;
+  align-items: stretch;
 }
 .pcard {
   border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 14px;
+  border-radius: var(--r-lg, 12px);
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -17,13 +18,23 @@
   background: var(--surface);
   transition:
     border-color var(--dur),
-    box-shadow var(--dur);
+    box-shadow var(--dur),
+    transform var(--dur);
   text-align: left;
   position: relative;
+  height: 100%;
+  box-sizing: border-box;
 }
 .pcard:hover {
   border-color: var(--border-strong);
-  box-shadow: 0 4px 12px -6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 20px -6px rgba(0, 0, 0, 0.08);
+}
+.pcard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 32px;
 }
 .pcard .desc {
   font-size: var(--fs-sm);
@@ -32,17 +43,90 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.9em;
-  line-height: 1.45;
+  height: 2.85em;
+  min-height: 2.85em;
+  line-height: 1.42;
+  margin: 0;
+}
+.pcard-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  min-height: 24px;
+}
+.pcard-tag {
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.pcard-progress-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pcard-progress-lbl {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+}
+.pcard-metrics {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-height: 24px;
+}
+.pcard-metric-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-2);
+  background: var(--surface-2);
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+.pcard-due-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.pcard-due-badge.overdue {
+  color: var(--red);
+  font-weight: 600;
+}
+.pcard-due-badge.today {
+  color: var(--amber);
+  font-weight: 600;
+}
+.pcard-due-badge.complete {
+  color: var(--green);
+  font-weight: 600;
 }
 .pcard .foot {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   font-size: var(--fs-xs);
   color: var(--text-3);
-  padding-top: 10px;
+  padding-top: 12px;
   border-top: 1px solid var(--divider);
+  margin-top: auto;
 }
 .picon {
   --sz: 28px;

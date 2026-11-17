@@ -1,46 +1,83 @@
 /* ---------- PROJECTS ---------- */
-import { ago, esc, fmtDate, minsAgo } from '../core/utils.js';
+import { TODAY, ago, diffD, esc, fmtDate, minsAgo, parse } from '../core/utils.js';
 import { ic } from '../core/icons.js';
 import { PSTAT } from '../core/constants.js';
 import { S, canSee, progressOf, tasksOf, visibleProjects } from '../core/store.js';
-import { empty, linkIcon, pIcon, pStatus, progBar } from '../ui/helpers.js';
+import { empty, pIcon, pStatus, progBar } from '../ui/helpers.js';
 
 export function projectCard(p) {
   const ts = tasksOf(p.id);
   const pr = progressOf(p.id);
   const open = ts.filter(t => t.status !== 'done').length;
   const locked = !canSee(p);
+  const doneCount = ts.length - open;
+
+  let dueHtml = `<span class="pcard-due-badge" style="opacity:0.6">${ic('calendar', 11)} Belum ada deadline</span>`;
+  if (p.due) {
+    const days = diffD(parse(p.due), TODAY);
+    if (p.status === 'complete') {
+      dueHtml = `<span class="pcard-due-badge complete">${ic('check-circle', 11)} Selesai</span>`;
+    } else if (days < 0) {
+      dueHtml = `<span class="pcard-due-badge overdue">${ic('alert-circle', 11)} Lewat ${Math.abs(days)}h</span>`;
+    } else if (days === 0) {
+      dueHtml = `<span class="pcard-due-badge today">${ic('clock', 11)} Hari ini</span>`;
+    } else {
+      dueHtml = `<span class="pcard-due-badge">${ic('calendar', 11)} ${fmtDate(p.due)} (${days}h)</span>`;
+    }
+  }
+
+  const tagsHtml = p.tags && p.tags.length
+    ? p.tags.map(t => `<span class="pcard-tag">${esc(t)}</span>`).join('')
+    : `<span class="faint" style="font-size:11px;opacity:0.5">Tanpa kategori</span>`;
+
+  const linkCount = (p.links || []).length;
+  const msCount = (p.milestones || []).length;
+  const metricsHtml = [
+    `<span class="pcard-metric-pill" title="${ts.length} total tugas">${ic('check-square', 11)}<span>${open} tugas aktif</span></span>`,
+    linkCount ? `<span class="pcard-metric-pill" title="${linkCount} tautan kebutuhan lomba">${ic('link', 11)}<span>${linkCount} link</span></span>` : '',
+    msCount ? `<span class="pcard-metric-pill" title="${msCount} milestone lomba">${ic('flag', 11)}<span>${msCount} milestone</span></span>` : '',
+  ].filter(Boolean).join('');
+
   return `<div class="pcard" data-a="go" data-r="project" data-id="${p.id}" data-ctx="project" role="link" tabindex="0" aria-label="${esc(p.name)}">
-    <div class="row">${pIcon(p)}<div class="grow" style="min-width:0"><div class="row" style="gap:6px"><b class="trunc" style="font-weight:600;font-size:14px">${esc(p.name)}</b>${p.fav ? `<span style="color:var(--amber)">${ic('star', 12)}</span>` : ''}${p.private ? `<span class="faint" data-tip="Private project">${ic('lock', 12)}</span>` : ''}</div></div>${pStatus(p.status)}</div>
-    <div class="desc">${esc(p.desc)}</div>
-    ${
-      p.tags && p.tags.length
-        ? `<div class="row" style="gap:5px;flex-wrap:wrap;margin:4px 0">
-      ${p.tags
-        .map(
-          t => `<span class="badge" style="font-size:11px;padding:1px 7px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border-subtle);color:var(--text);font-weight:500">${esc(t)}</span>`,
-        )
-        .join('')}
-    </div>`
-        : ''
-    }
-    ${locked ? `<div class="row faint" style="font-size:12px">${ic('lock', 12)}Restricted — request access to see tasks</div>` : `<div class="row" style="gap:10px">${progBar(pr, p.status === 'complete' ? 'green' : p.status === 'risk' ? 'red' : '')}<span class="num" style="font-size:12px;font-weight:500">${pr}%</span></div>`}
-    ${
-      p.links && p.links.length
-        ? `<div class="row" style="gap:5px;flex-wrap:wrap;margin-top:4px">
-      ${p.links
-        .slice(0, 3)
-        .map(
-          l => `<a class="chip" data-a="openProjectLink" data-url="${esc(l.url)}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" style="font-size:11.5px;padding:2px 7px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border-subtle);display:inline-flex;align-items:center;gap:4px;color:var(--text);text-decoration:none;max-width:130px" title="${esc(l.label)}">
-        ${linkIcon(l.type, 11)}<span class="trunc">${esc(l.label)}</span><span style="opacity:0.6;display:inline-flex;align-items:center">${ic('external-link', 9)}</span>
-      </a>`,
-        )
-        .join('')}
-      ${p.links.length > 3 ? `<span class="faint" style="font-size:11px;align-self:center">+${p.links.length - 3}</span>` : ''}
-    </div>`
-        : ''
-    }
-    <div class="foot"><span class="row" style="gap:4px">${ic('circle-check', 12)}${locked ? '—' : `${ts.length - open}/${ts.length}`}</span><span class="row" style="gap:4px">${ic('calendar', 12)}${fmtDate(p.due)}</span><span class="row hide-m" style="gap:4px">${ic('clock', 12)}${ago(minsAgo(p.last))}</span></div>
+    <div class="pcard-header">
+      <div class="row" style="gap:10px;min-width:0;flex:1">
+        ${pIcon(p)}
+        <div class="grow" style="min-width:0">
+          <div class="row" style="gap:6px">
+            <b class="trunc" style="font-weight:600;font-size:14px">${esc(p.name)}</b>
+            ${p.fav ? `<span style="color:var(--amber);flex-shrink:0">${ic('star', 12)}</span>` : ''}
+            ${p.private ? `<span class="faint" style="flex-shrink:0" data-tip="Private project">${ic('lock', 12)}</span>` : ''}
+          </div>
+        </div>
+      </div>
+      ${pStatus(p.status)}
+    </div>
+
+    <div class="desc">${esc(p.desc || 'Tidak ada deskripsi proyek.')}</div>
+
+    <div class="pcard-tags">
+      ${tagsHtml}
+    </div>
+
+    <div class="pcard-progress-box">
+      <div class="pcard-progress-lbl">
+        <span class="muted" style="font-weight:500">${locked ? 'Terkunci' : `${doneCount}/${ts.length} tugas selesai`}</span>
+        <span class="num" style="font-weight:600;font-size:11.5px">${pr}%</span>
+      </div>
+      ${locked
+        ? `<div class="row faint" style="font-size:12px">${ic('lock', 12)}Restricted — request access</div>`
+        : progBar(pr, p.status === 'complete' ? 'green' : p.status === 'risk' ? 'red' : '')
+      }
+    </div>
+
+    <div class="pcard-metrics">
+      ${metricsHtml}
+    </div>
+
+    <div class="foot">
+      ${dueHtml}
+      <span class="row hide-m muted" style="gap:4px;font-size:11px" title="Terakhir diperbarui">${ic('clock', 11)}${ago(minsAgo(p.last))}</span>
+    </div>
     <button class="ibtn ibtn-sm more" data-a="ctxBtn" data-ctx="project" data-id="${p.id}" aria-label="Project options" style="background:var(--surface);box-shadow:0 0 0 1px var(--border)">${ic('ellipsis', 14)}</button>
   </div>`;
 }

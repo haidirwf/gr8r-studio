@@ -120,6 +120,10 @@ export function filePrev(f) {
 }
 
 export function linkIcon(type, s = 14) {
+  if (type === 'ui') return ic('palette', s);
+  if (type === 'ux') return ic('layers', s);
+  if (type === 'slide') return ic('presentation', s);
+  if (type === 'proposal') return ic('file-text', s);
   if (type === 'website') return ic('globe', s);
   if (type === 'guidebook') return ic('book-open', s);
   if (type === 'submission') return ic('send', s);
@@ -130,6 +134,38 @@ export function linkIcon(type, s = 14) {
 
 export function linkMeta(type) {
   switch (type) {
+    case 'ui':
+      return {
+        label: 'Desain UI',
+        icon: 'palette',
+        color: '#f43f5e',
+        bg: 'rgba(244, 63, 94, 0.12)',
+        border: 'rgba(244, 63, 94, 0.25)',
+      };
+    case 'ux':
+      return {
+        label: 'Riset & UX',
+        icon: 'layers',
+        color: '#8b5cf6',
+        bg: 'rgba(139, 92, 246, 0.12)',
+        border: 'rgba(139, 92, 246, 0.25)',
+      };
+    case 'slide':
+      return {
+        label: 'Slide Presentasi',
+        icon: 'presentation',
+        color: '#f59e0b',
+        bg: 'rgba(245, 158, 11, 0.12)',
+        border: 'rgba(245, 158, 11, 0.25)',
+      };
+    case 'proposal':
+      return {
+        label: 'Proposal & Laporan',
+        icon: 'file-text',
+        color: '#10b981',
+        bg: 'rgba(16, 185, 129, 0.12)',
+        border: 'rgba(16, 185, 129, 0.25)',
+      };
     case 'website':
       return {
         label: 'Website Lomba',

@@ -25,6 +25,14 @@ export function projOverview(p) {
     ? (annDays === 0 ? '📢 Pengumuman hari ini!' : annDays > 0 ? `📢 ${annDays} hari lagi menuju pengumuman` : `📢 Diumumkan ${fmtDate(p.announce)}`)
     : '';
   const links = p.links || [];
+  const CORE_DELIVERABLES = [
+    { type: 'ui', label: 'Desain UI', hint: 'Figma / Prototype', icon: 'palette', color: '#f43f5e', bg: 'rgba(244, 63, 94, 0.12)' },
+    { type: 'ux', label: 'Riset & UX', hint: 'FigJam / Miro / Docs', icon: 'layers', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.12)' },
+    { type: 'slide', label: 'Slide Presentasi', hint: 'Canva / Slides / PPT', icon: 'presentation', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
+    { type: 'proposal', label: 'Proposal & Laporan', hint: 'Google Docs / PDF', icon: 'file-text', color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' },
+  ];
+  const otherLinks = links.filter(l => !CORE_DELIVERABLES.some(d => d.type === l.type));
+
   return `<div class="page" style="max-width:1160px;padding-top:22px">
     <div class="grid2">
       <div class="stack">
@@ -47,34 +55,71 @@ export function projOverview(p) {
         </dl></div></section>
         <section class="panel">
           <div class="panel-h">
-            <h2>Competition Resources & Links</h2>
+            <h2>Competition Resources & Deliverables</h2>
             <div class="acts">
-              <button class="btn btn-sm btn-ghost" data-a="addProjectLink" data-id="${p.id}">${ic('plus', 13)}Add Link</button>
+              <button class="btn btn-sm btn-ghost" data-a="addProjectLink" data-id="${p.id}">${ic('plus', 13)}Add Custom Link</button>
             </div>
           </div>
-          <div class="panel-b" style="display:flex;flex-direction:column;gap:8px">
-            ${links.length
-              ? links.map(l => {
-                const meta = linkMeta(l.type);
-                const host = formatUrlDomain(l.url);
-                return `
-                <div class="res-item">
-                  <div class="res-icon" style="background:${meta.bg};color:${meta.color}">
-                    ${ic(meta.icon, 18)}
-                  </div>
-                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
-                    <a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" class="res-link" title="${esc(l.url)}">
-                      <span class="trunc">${esc(l.label)}</span>
-                      <span style="display:inline-flex;align-items:center;color:var(--text-3);flex-shrink:0">${ic('arrow-up-right', 12)}</span>
-                    </a>
-                    ${host ? `<span style="font-size:11px;color:var(--text-3);font-family:var(--font-mono, monospace);line-height:1.2" class="trunc">${esc(host)}</span>` : ''}
-                  </div>
-                  <span class="res-badge" style="background:${meta.bg};color:${meta.color};border:1px solid ${meta.border}">${esc(meta.label)}</span>
-                  <button class="ibtn ibtn-xs res-del" data-a="removeProjectLink" data-pid="${p.id}" data-lid="${l.id}" title="Hapus link" aria-label="Hapus link">${ic('trash-2', 14)}</button>
-                </div>
-              `;}).join('')
-              : `<div class="empty sm faint" style="padding:16px 0;text-align:center">${ic('link', 20)}<div style="margin-top:6px;font-size:12.5px">Belum ada tautan kebutuhan lomba.</div><button class="btn btn-xs btn-secondary" style="margin-top:8px" data-a="addProjectLink" data-id="${p.id}">${ic('plus', 12)}Tambah Link</button></div>`
-            }
+          <div class="panel-b" style="display:flex;flex-direction:column;gap:14px">
+            <div>
+              <div class="deliverable-grid">
+                ${CORE_DELIVERABLES.map(d => {
+                  const matched = links.find(l => l.type === d.type);
+                  if (matched) {
+                    const host = formatUrlDomain(matched.url);
+                    return `
+                    <div class="deliv-card">
+                      <div class="deliv-icon" style="background:${d.bg};color:${d.color}">
+                        ${ic(d.icon, 18)}
+                      </div>
+                      <div class="deliv-body">
+                        <span class="deliv-title trunc" title="${esc(matched.label)}">${esc(matched.label)}</span>
+                        <a href="${esc(matched.url)}" target="_blank" rel="noopener noreferrer" class="deliv-link trunc" title="${esc(matched.url)}">
+                          <span class="trunc">${esc(host || matched.url)}</span>
+                          ${ic('arrow-up-right', 11)}
+                        </a>
+                      </div>
+                      <button class="ibtn ibtn-xs res-del" data-a="removeProjectLink" data-pid="${p.id}" data-lid="${matched.id}" title="Hapus link" aria-label="Hapus link">${ic('trash-2', 13)}</button>
+                    </div>`;
+                  }
+                  return `
+                  <button type="button" class="deliv-card empty" data-a="addProjectLink" data-id="${p.id}" data-type="${d.type}" data-label="${esc(d.label)}" title="Klik untuk masukkan tautan ${esc(d.label)}">
+                    <div class="deliv-icon" style="background:${d.bg};color:${d.color}">
+                      ${ic(d.icon, 18)}
+                    </div>
+                    <div class="deliv-body">
+                      <span class="deliv-title" style="font-weight:600">${esc(d.label)}</span>
+                      <span class="deliv-empty-lbl">${ic('plus', 11)} Masukkan link ${esc(d.hint)}</span>
+                    </div>
+                  </button>`;
+                }).join('')}
+              </div>
+            </div>
+
+            ${otherLinks.length ? `
+              <div style="border-top:1px solid var(--divider);padding-top:10px;display:flex;flex-direction:column;gap:8px">
+                <span class="faint" style="font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em">Informasi & Panduan Panitia</span>
+                ${otherLinks.map(l => {
+                  const meta = linkMeta(l.type);
+                  const host = formatUrlDomain(l.url);
+                  return `
+                  <div class="res-item">
+                    <div class="res-icon" style="background:${meta.bg};color:${meta.color}">
+                      ${ic(meta.icon, 18)}
+                    </div>
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                      <a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" class="res-link" title="${esc(l.url)}">
+                        <span class="trunc">${esc(l.label)}</span>
+                        <span style="display:inline-flex;align-items:center;color:var(--text-3);flex-shrink:0">${ic('arrow-up-right', 12)}</span>
+                      </a>
+                      ${host ? `<span style="font-size:11px;color:var(--text-3);font-family:var(--font-mono, monospace);line-height:1.2" class="trunc">${esc(host)}</span>` : ''}
+                    </div>
+                    <span class="res-badge" style="background:${meta.bg};color:${meta.color};border:1px solid ${meta.border}">${esc(meta.label)}</span>
+                    <button class="ibtn ibtn-xs res-del" data-a="removeProjectLink" data-pid="${p.id}" data-lid="${l.id}" title="Hapus link" aria-label="Hapus link">${ic('trash-2', 14)}</button>
+                  </div>`;
+                }).join('')}
+              </div>
+            ` : ''}
           </div>
         </section>
         <section class="panel"><div class="panel-h"><h2>Milestones</h2></div><div class="panel-b">${

@@ -121,7 +121,26 @@ export function modalHtml(m) {
     case 'projectLink':
       return wrap(
         'sm',
-        `${H('Tambah Tautan Proyek', 'Tambahkan tautan panduan, formulir submit, atau grup koordinasi.')}<form class="modal-b" data-submit="submitProjectLink" style="gap:12px"><div class="field"><label class="label" for="pl-label">Nama Link</label><input class="input" id="pl-label" placeholder="Contoh: Juknis Lomba, Form Submit, Grup WA" autofocus required></div><div class="field"><label class="label" for="pl-url">URL</label><input class="input" id="pl-url" type="url" placeholder="https://..." required></div><div class="field"><label class="label" for="pl-type">Tipe Link</label><select class="select" id="pl-type"><option value="website">Website Resmi Lomba</option><option value="guidebook">Buku Panduan</option><option value="submission">Formulir Pengumpulan</option><option value="group">Grup Koordinasi</option><option value="social">Media Sosial</option><option value="other">Lainnya</option></select></div></form><div class="modal-f"><span class="sp"></span><button class="btn btn-secondary" data-a="closeModal">Batal</button><button class="btn btn-primary" data-a="submitProjectLink">Tambah Link</button></div>`,
+        `${H(m.presetLabel ? `Tambah ${esc(m.presetLabel)}` : 'Tambah Tautan Proyek', 'Tambahkan tautan berkas karya atau kebutuhan informasi lomba.')}
+        <form class="modal-b" data-submit="submitProjectLink" style="gap:12px">
+          <div class="field"><label class="label" for="pl-type">Tipe Link</label>
+            <select class="select" id="pl-type">
+              <option value="ui" ${m.presetType === 'ui' ? 'selected' : ''}>🎨 Desain UI (Figma / Prototype)</option>
+              <option value="ux" ${m.presetType === 'ux' ? 'selected' : ''}>🧠 Riset & Desain UX (FigJam / Miro / Docs)</option>
+              <option value="slide" ${m.presetType === 'slide' ? 'selected' : ''}>📊 Slide Presentasi (Canva / Slides / PPT)</option>
+              <option value="proposal" ${m.presetType === 'proposal' ? 'selected' : ''}>📄 Proposal & Dokumen Karya (Docs / PDF)</option>
+              <option value="website" ${m.presetType === 'website' ? 'selected' : ''}>🌐 Website Resmi Lomba</option>
+              <option value="guidebook" ${m.presetType === 'guidebook' ? 'selected' : ''}>📖 Buku Panduan</option>
+              <option value="submission" ${m.presetType === 'submission' ? 'selected' : ''}>📤 Formulir Pengumpulan</option>
+              <option value="group" ${m.presetType === 'group' ? 'selected' : ''}>💬 Grup Koordinasi</option>
+              <option value="social" ${m.presetType === 'social' ? 'selected' : ''}>📸 Media Sosial Panitia</option>
+              <option value="other" ${!m.presetType || m.presetType === 'other' ? 'selected' : ''}>🔗 Lainnya</option>
+            </select>
+          </div>
+          <div class="field"><label class="label" for="pl-label">Nama / Judul Link</label><input class="input" id="pl-label" placeholder="Contoh: Figma Prototype, Riset FigJam, Pitch Deck Canva..." value="${esc(m.presetLabel || '')}" required></div>
+          <div class="field"><label class="label" for="pl-url">URL / Tautan</label><input class="input" id="pl-url" type="url" placeholder="https://..." autofocus required></div>
+        </form>
+        <div class="modal-f"><span class="sp"></span><button class="btn btn-secondary" data-a="closeModal">Batal</button><button class="btn btn-primary" data-a="submitProjectLink">Simpan Link</button></div>`,
       );
     case 'note':
       return wrap('', noteModal(m, H));
@@ -364,8 +383,15 @@ export function projectModal(m, H) {
       .join('')}</div></div>
 
     <div class="field" style="border-top:1px solid var(--divider);padding-top:14px;margin-top:4px;min-width:0">
-      <span class="label" style="font-weight:600;color:var(--text);font-size:13px">Tautan & Kebutuhan Lomba</span>
+      <span class="label" style="font-weight:600;color:var(--text);font-size:13px">Tautan Karya & Kebutuhan Lomba</span>
       <div class="col" style="gap:8px;margin-top:6px;min-width:0">
+        <span class="faint" style="font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-top:2px">Berkas Karya Utama</span>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-ui" style="font-size:12px">🎨 Desain UI (Figma / Prototype)</label><input class="input" id="p-link-ui" data-in="pform" data-f="ui" placeholder="https://figma.com/design/... atau prototype" value="${esc(f.ui || '')}" autocapitalize="off" autocorrect="off"></div>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-ux" style="font-size:12px">🧠 Desain & Riset UX (FigJam / Miro / Docs)</label><input class="input" id="p-link-ux" data-in="pform" data-f="ux" placeholder="https://figma.com/board/... atau riset UX" value="${esc(f.ux || '')}" autocapitalize="off" autocorrect="off"></div>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-slide" style="font-size:12px">📊 Slide Presentasi (Canva / Slides / PPT)</label><input class="input" id="p-link-slide" data-in="pform" data-f="slide" placeholder="https://canva.com/... atau Google Slides" value="${esc(f.slide || '')}" autocapitalize="off" autocorrect="off"></div>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-proposal" style="font-size:12px">📄 Proposal & Dokumen (Docs / PDF)</label><input class="input" id="p-link-proposal" data-in="pform" data-f="proposal" placeholder="https://docs.google.com/document/... atau PDF" value="${esc(f.proposal || '')}" autocapitalize="off" autocorrect="off"></div>
+
+        <span class="faint" style="font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-top:6px">Informasi & Panduan Panitia</span>
         <div class="field" style="min-width:0"><label class="label" for="p-link-website" style="font-size:12px">🌐 Website / Info Lomba</label><input class="input" id="p-link-website" data-in="pform" data-f="website" placeholder="https://namalomba.com atau link pendaftaran..." value="${esc(f.website || '')}" autocapitalize="off" autocorrect="off"></div>
         <div class="field" style="min-width:0"><label class="label" for="p-link-guidebook" style="font-size:12px">📖 Buku Panduan</label><input class="input" id="p-link-guidebook" data-in="pform" data-f="guidebook" placeholder="https://drive.google.com/..." value="${esc(f.guidebook || '')}" autocapitalize="off" autocorrect="off"></div>
         <div class="field" style="min-width:0"><label class="label" for="p-link-submission" style="font-size:12px">📤 Formulir Pengumpulan</label><input class="input" id="p-link-submission" data-in="pform" data-f="submission" placeholder="https://forms.gle/..." value="${esc(f.submission || '')}" autocapitalize="off" autocorrect="off"></div>

@@ -1,7 +1,6 @@
 /* ---------- PROJECTS ---------- */
 import { TODAY, ago, diffD, esc, fmtDate, minsAgo, parse } from '../core/utils.js';
 import { ic } from '../core/icons.js';
-import { PSTAT } from '../core/constants.js';
 import { S, canSee, progressOf, tasksOf, visibleProjects } from '../core/store.js';
 import { empty, pIcon, pStatus, progBar } from '../ui/helpers.js';
 
@@ -102,36 +101,21 @@ export function projectCard(p) {
 export function pageProjects() {
   const u = S.ui;
   const q = (u.projQ || '').toLowerCase();
-  const st = u.projStatus || 'all';
-  const sort = u.projSort || 'recent';
-  const tagFilter = u.projTag || 'all';
-
-  const allAvailableTags = [
-    ...new Set([
-      'UI/UX',
-      'Webdev',
-      'SKL',
-      ...visibleProjects().flatMap(p => p.tags || []),
-    ]),
-  ].filter(Boolean);
 
   let ps = visibleProjects().filter(
     p =>
-      (st === 'all' || p.status === st) &&
-      (tagFilter === 'all' || (p.tags && p.tags.includes(tagFilter))) &&
-      (!q ||
-        p.name.toLowerCase().includes(q) ||
-        p.desc.toLowerCase().includes(q) ||
-        (p.tags && p.tags.some(t => t.toLowerCase().includes(q)))),
+      !q ||
+      p.name.toLowerCase().includes(q) ||
+      p.desc.toLowerCase().includes(q) ||
+      (p.tags && p.tags.some(t => t.toLowerCase().includes(q))),
   );
-  const sorter = { recent: p => p.last, name: p => p.name, due: p => p.due, progress: p => -progressOf(p.id) }[sort];
-  ps.sort((a, b) => (sorter(a) > sorter(b) ? 1 : -1));
+  ps.sort((a, b) => (b.last || 0) - (a.last || 0));
   const view = u.projView === 'table' ? 'grid' : (u.projView || 'grid');
   let body;
   if (!visibleProjects().length)
     body = `<div class="panel">${empty('folder-kanban', 'No projects yet', 'Create your first project to start organizing your work.', `<button class="btn btn-primary btn-sm" data-a="newProject">${ic('plus', 14)}Create project</button>`)}</div>`;
   else if (!ps.length)
-    body = `<div class="panel">${empty('search-x', 'No results found', 'No projects match your search or filters. Try a different term.', `<button class="btn btn-secondary btn-sm" data-a="clearProjFilters">Clear filters</button>`)}</div>`;
+    body = `<div class="panel">${empty('search-x', 'No results found', 'No projects match your search. Try a different term.', `<button class="btn btn-secondary btn-sm" data-a="clearProjFilters">Clear search</button>`)}</div>`;
   else if (view === 'list')
     body = `<div class="panel" style="overflow:hidden">${ps
       .map(p => {
@@ -146,22 +130,6 @@ export function pageProjects() {
     <div class="ph"><div><h1>Projects</h1><p>${visibleProjects().filter(p => p.status !== 'complete').length} active · ${visibleProjects().filter(p => p.status === 'complete').length} completed</p></div><div class="acts"><button class="btn btn-primary" data-a="newProject">${ic('plus', 14)}New project</button></div></div>
     <div class="row" style="margin-bottom:16px;flex-wrap:wrap;gap:8px">
       <div class="inwrap">${ic('search', 13)}<input class="input search-sm" id="proj-q" data-in="projQ" placeholder="Search projects or tags" value="${esc(u.projQ || '')}" aria-label="Search projects"></div>
-      <select class="select" style="height:26px;width:auto;font-size:12px" data-in="projTag" aria-label="Filter by tag"><option value="all">Semua Tag</option>${allAvailableTags
-        .map(t => `<option value="${esc(t)}" ${tagFilter === t ? 'selected' : ''}>Tag: ${esc(t)}</option>`)
-        .join('')}</select>
-      <select class="select" style="height:26px;width:auto;font-size:12px" data-in="projStatus" aria-label="Filter by status"><option value="all">All statuses</option>${Object.entries(
-        PSTAT,
-      )
-        .map(([k, v]) => `<option value="${k}" ${st === k ? 'selected' : ''}>${v.name}</option>`)
-        .join('')}</select>
-      <select class="select" style="height:26px;width:auto;font-size:12px" data-in="projSort" aria-label="Sort">${[
-        ['recent', 'Recently active'],
-        ['name', 'Name'],
-        ['due', 'Due date'],
-        ['progress', 'Progress'],
-      ]
-        .map(([k, n]) => `<option value="${k}" ${sort === k ? 'selected' : ''}>Sort: ${n}</option>`)
-        .join('')}</select>
       <span class="sp"></span>
       <div class="seg" role="tablist" aria-label="Layout">${[
         ['grid', 'Grid', 'layout-grid'],

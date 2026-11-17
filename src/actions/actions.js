@@ -1488,6 +1488,10 @@ A.newProject = () => {
     announce: '',
     tmpl: 'blank',
     tags: ['Webdev'],
+    ui: '',
+    ux: '',
+    slide: '',
+    proposal: '',
     website: '',
     guidebook: '',
     submission: '',
@@ -1502,6 +1506,10 @@ A.editProject = el => {
   const p = proj(el.dataset.id);
   if (!p) return;
   S.ui.pop = null;
+  const ui = p.links?.find(l => l.type === 'ui')?.url || '';
+  const ux = p.links?.find(l => l.type === 'ux')?.url || '';
+  const slide = p.links?.find(l => l.type === 'slide')?.url || '';
+  const proposal = p.links?.find(l => l.type === 'proposal')?.url || '';
   const web = p.links?.find(l => l.type === 'website')?.url || '';
   const gb = p.links?.find(l => l.type === 'guidebook')?.url || '';
   const sub = p.links?.find(l => l.type === 'submission')?.url || '';
@@ -1520,6 +1528,10 @@ A.editProject = el => {
     announce: p.announce || '',
     tmpl: 'blank',
     tags: Array.isArray(p.tags) ? [...p.tags] : [],
+    ui,
+    ux,
+    slide,
+    proposal,
     website: web,
     guidebook: gb,
     submission: sub,
@@ -1542,6 +1554,14 @@ export function syncPformFromDom() {
   if (dueEl) f.due = dueEl.value;
   const annEl = $('#p-announce');
   if (annEl) f.announce = annEl.value;
+  const uiEl = $('#p-link-ui');
+  if (uiEl) f.ui = uiEl.value;
+  const uxEl = $('#p-link-ux');
+  if (uxEl) f.ux = uxEl.value;
+  const slideEl = $('#p-link-slide');
+  if (slideEl) f.slide = slideEl.value;
+  const propEl = $('#p-link-proposal');
+  if (propEl) f.proposal = propEl.value;
   const webEl = $('#p-link-website');
   if (webEl) f.website = webEl.value;
   const gbEl = $('#p-link-guidebook');
@@ -1584,7 +1604,9 @@ A.addProjectLink = el => {
   const pid = el.dataset.id;
   const p = proj(pid);
   if (!p) return;
-  openModal({ type: 'projectLink', pid });
+  const presetType = el.dataset.type || '';
+  const presetLabel = el.dataset.label || '';
+  openModal({ type: 'projectLink', pid, presetType, presetLabel });
 };
 A.submitProjectLink = () => {
   const m = S.ui.modals[S.ui.modals.length - 1];
@@ -1731,6 +1753,10 @@ A.submitProject = () => {
     return;
   }
 
+  const uiUrl = (f.ui || $('#p-link-ui')?.value || '').trim();
+  const uxUrl = (f.ux || $('#p-link-ux')?.value || '').trim();
+  const slideUrl = (f.slide || $('#p-link-slide')?.value || '').trim();
+  const propUrl = (f.proposal || $('#p-link-proposal')?.value || '').trim();
   const webUrl = (f.website || $('#p-link-website')?.value || '').trim();
   const gbUrl = (f.guidebook || $('#p-link-guidebook')?.value || '').trim();
   const subUrl = (f.submission || $('#p-link-submission')?.value || '').trim();
@@ -1738,6 +1764,10 @@ A.submitProject = () => {
   const socUrl = (f.social || $('#p-link-social')?.value || '').trim();
 
   const collectedLinks = [];
+  if (uiUrl) collectedLinks.push({ id: uid('l'), type: 'ui', label: 'Desain UI / Prototype', url: uiUrl.startsWith('http') ? uiUrl : 'https://' + uiUrl });
+  if (uxUrl) collectedLinks.push({ id: uid('l'), type: 'ux', label: 'Desain & Riset UX', url: uxUrl.startsWith('http') ? uxUrl : 'https://' + uxUrl });
+  if (slideUrl) collectedLinks.push({ id: uid('l'), type: 'slide', label: 'Slide Presentasi', url: slideUrl.startsWith('http') ? slideUrl : 'https://' + slideUrl });
+  if (propUrl) collectedLinks.push({ id: uid('l'), type: 'proposal', label: 'Proposal & Laporan', url: propUrl.startsWith('http') ? propUrl : 'https://' + propUrl });
   if (webUrl) collectedLinks.push({ id: uid('l'), type: 'website', label: 'Website Lomba', url: webUrl.startsWith('http') ? webUrl : 'https://' + webUrl });
   if (gbUrl) collectedLinks.push({ id: uid('l'), type: 'guidebook', label: 'Buku Panduan', url: gbUrl.startsWith('http') ? gbUrl : 'https://' + gbUrl });
   if (subUrl) collectedLinks.push({ id: uid('l'), type: 'submission', label: 'Formulir Pengumpulan', url: subUrl.startsWith('http') ? subUrl : 'https://' + subUrl });
@@ -1746,7 +1776,8 @@ A.submitProject = () => {
 
   if (m.edit) {
     const existingP = proj(m.edit);
-    const customLinks = (existingP?.links || []).filter(l => !['website', 'guidebook', 'submission', 'group', 'social', '__tags_meta__', '__image_meta__', '__announce_meta__'].includes(l.type));
+    const knownTypes = ['ui', 'ux', 'slide', 'proposal', 'website', 'guidebook', 'submission', 'group', 'social', '__tags_meta__', '__image_meta__', '__announce_meta__'];
+    const customLinks = (existingP?.links || []).filter(l => !knownTypes.includes(l.type));
     collectedLinks.push(...customLinks);
   }
 

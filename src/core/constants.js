@@ -31,6 +31,7 @@ export const PSTAT = {
   active: { name: 'In Progress', c: 'var(--blue)' },
   risk: { name: 'At Risk', c: 'var(--red)' },
   hold: { name: 'On Hold', c: 'var(--amber)' },
+  waiting: { name: 'Menunggu Pengumuman', c: 'var(--violet)' },
   complete: { name: 'Completed', c: 'var(--green)' },
 };
 export const PCOLORS = {

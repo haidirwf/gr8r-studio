@@ -17,6 +17,8 @@ export function projectCard(p) {
     const days = diffD(parse(p.due), TODAY);
     if (p.status === 'complete') {
       dueHtml = `<span class="pcard-due-badge complete">${ic('check-circle', 11)} Selesai</span>`;
+    } else if (p.status === 'waiting') {
+      dueHtml = `<span class="pcard-due-badge waiting">${ic('clock', 11)} Pengumuman</span>`;
     } else if (days < 0) {
       dueHtml = `<span class="pcard-due-badge overdue">${ic('alert-circle', 11)} Lewat ${Math.abs(days)}h</span>`;
     } else if (days === 0) {
@@ -68,7 +70,7 @@ export function projectCard(p) {
       </div>
       ${locked
         ? `<div class="row faint" style="font-size:12px">${ic('lock', 12)}Restricted — request access</div>`
-        : progBar(pr, p.status === 'complete' ? 'green' : p.status === 'risk' ? 'red' : '')
+        : progBar(pr, p.status === 'complete' ? 'green' : p.status === 'waiting' ? 'violet' : p.status === 'risk' ? 'red' : '')
       }
     </div>
 

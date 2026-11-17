@@ -695,6 +695,9 @@
 .prog.red > i {
   background: var(--red);
 }
+.prog.violet > i {
+  background: var(--violet);
+}
 .stackbar {
   display: flex;
   height: 6px;

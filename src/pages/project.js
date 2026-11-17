@@ -6,7 +6,7 @@ import { ic } from '../core/icons.js';
 import { PSTAT } from '../core/constants.js';
 import { D, S, canSee, proj, tasksOf } from '../core/store.js';
 import { avStack, empty, pIcon } from '../ui/helpers.js';
-import { applyView, viewOf, viewToolbar } from '../shell/view-engine.js';
+import { applyView, viewOf } from '../shell/view-engine.js';
 import { page404, stateDenied } from './errors.js';
 import { projActivity, projOverview } from '../views/project-overview.js';
 import { boardHtml } from '../views/board.js';
@@ -74,7 +74,6 @@ export function pageProject() {
   </div>`;
 }
 export function taskViewBody(type, ts, key, p) {
-  const addBtn = `<button class="btn btn-primary btn-sm" data-a="newTask" data-project="${p.id}">${ic('plus', 13)}New task</button>`;
   const noTasks = !tasksOf(p.id).length;
   const emptyAll = empty(
     'list-checks',
@@ -83,8 +82,8 @@ export function taskViewBody(type, ts, key, p) {
     `<button class="btn btn-primary btn-sm" data-a="newTask" data-project="${p.id}">${ic('plus', 14)}Add task</button>`,
   );
   if (type === 'table' || type === 'list') type = 'board';
-  if (type === 'board') return viewToolbar(key, { group: false, right: addBtn }) + (noTasks ? emptyAll : boardHtml(ts, key, { project: p.id }));
-  if (type === 'calendar') return viewToolbar(key, { group: false, right: addBtn }) + calendarHtml(ts, { key, project: p.id, events: true });
-  if (type === 'timeline') return viewToolbar(key, { group: false, right: addBtn, extra: tlControls(key) }) + timelineHtml(ts, key, p);
+  if (type === 'board') return noTasks ? emptyAll : boardHtml(ts, key, { project: p.id });
+  if (type === 'calendar') return calendarHtml(ts, { key, project: p.id, events: true });
+  if (type === 'timeline') return `<div class="toolbar" style="padding:8px var(--gutter);border-bottom:1px solid var(--border)">${tlControls(key)}</div>` + timelineHtml(ts, key, p);
   return page404();
 }

@@ -4,7 +4,7 @@ import { ic } from '../core/icons.js';
 import { D, S, allTasks, pColor, proj, taskColor } from '../core/store.js';
 import { prIcon, stIcon } from '../ui/helpers.js';
 import { fxc } from '../shell/render.js';
-import { applyView, viewOf, viewToolbar } from '../shell/view-engine.js';
+import { applyView, viewOf } from '../shell/view-engine.js';
 
 export function startOfWeek(d) {
   const x = sod(d);
@@ -106,12 +106,9 @@ export function calendarHtml(ts, opt = {}) {
     <div class="cal-toolbar">
       <div class="cal-nav-group">
         <h2 class="cal-label" aria-live="polite">${label}</h2>
-        <div class="cal-nav-btns">
-          <button class="btn btn-secondary btn-sm cal-today-btn" data-a="calNav" data-d="0">${ic('calendar', 13)}<span>Hari Ini</span></button>
-          <div class="cal-arrows-box">
-            <button class="cal-arrow-btn" data-a="calNav" data-d="-1" aria-label="Bulan Sebelumnya" title="Bulan Sebelumnya">${ic('chevron-left', 16)}</button>
-            <button class="cal-arrow-btn" data-a="calNav" data-d="1" aria-label="Bulan Selanjutnya" title="Bulan Selanjutnya">${ic('chevron-right', 16)}</button>
-          </div>
+        <div class="cal-arrows-box">
+          <button class="cal-arrow-btn" data-a="calNav" data-d="-1" aria-label="Bulan Sebelumnya" title="Bulan Sebelumnya">${ic('chevron-left', 16)}</button>
+          <button class="cal-arrow-btn" data-a="calNav" data-d="1" aria-label="Bulan Selanjutnya" title="Bulan Selanjutnya">${ic('chevron-right', 16)}</button>
         </div>
       </div>
     </div>
@@ -169,5 +166,5 @@ export function pageWsCalendar() {
   const key = 'cal';
   const v = viewOf(key);
   return `<div class="page flush"><div class="ph"><div><div class="cal-title-row"><h1>Kalender Tugas</h1><button class="btn btn-primary btn-sm" data-a="newTask">${ic('plus', 14)}<span>Tugas Baru</span></button></div><p>Pantau deadline lomba dan tugas SKL secara visual.</p></div></div>
-  ${viewToolbar(key, { group: false })}${calendarHtml(applyView(allTasks(), v), { key, events: true })}</div>`;
+  ${calendarHtml(applyView(allTasks(), v), { key, events: true })}</div>`;
 }

@@ -125,6 +125,10 @@
   color: var(--green);
   font-weight: 600;
 }
+.pcard-due-badge.waiting {
+  color: var(--violet);
+  font-weight: 600;
+}
 .pcard .foot {
   display: flex;
   align-items: center;

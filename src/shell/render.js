@@ -8,6 +8,7 @@ import { enhanceSelects, selectMenu } from '../ui/select.js';
 import { renderShell } from './layout.js';
 import { PTABS } from '../pages/project.js';
 import { tlAfter } from '../views/timeline.js';
+import { syncCalCursor } from '../views/calendar.js';
 import { renderLayer } from '../overlays/drawer.js';
 import { placePop } from '../overlays/popovers.js';
 import { placeAnchoredModals } from '../overlays/modals.js';
@@ -263,6 +264,7 @@ export function afterRender() {
   const pal = $('#pal-in');
   if (pal && document.activeElement !== pal && !S.ui.pop) pal.focus();
   if ((S.ui.route === 'project' && S.ui.params.tab === 'timeline') || S.ui.route === 'timeline') tlAfter();
+  syncCalCursor(false);
 }
 /* Headline numbers count up once when a dashboard is entered. */
 export function countUp() {

@@ -20,6 +20,10 @@ export function projOverview(p) {
     .activity.filter(a => a.project === p.id)
     .slice(0, 6);
   const daysLeft = diffD(parse(p.due), TODAY);
+  const annDays = p.announce ? diffD(parse(p.announce), TODAY) : null;
+  const annText = p.announce
+    ? (annDays === 0 ? '📢 Pengumuman hari ini!' : annDays > 0 ? `📢 ${annDays} hari lagi menuju pengumuman` : `📢 Diumumkan ${fmtDate(p.announce)}`)
+    : '';
   const links = p.links || [];
   const webLink = links.find(l => l.type === 'website') || links[0];
   return `<div class="page" style="max-width:1160px;padding-top:22px">
@@ -28,7 +32,7 @@ export function projOverview(p) {
         <section class="panel"><div class="panel-h"><h2>About</h2><div class="acts"><button class="btn btn-sm btn-ghost" data-a="editProject" data-id="${p.id}">${ic('pencil', 13)}Edit</button></div></div><div class="panel-b" style="font-size:14px;line-height:1.6;color:var(--text)">${esc(p.desc)}</div></section>
         <section class="panel"><div class="panel-h"><h2>Progress</h2><div class="acts"><span class="faint" style="font-size:12px">${ts.filter(t => t.status === 'done').length} of ${ts.length} tasks done</span></div></div>
           <div class="panel-b">
-            <div class="row" style="align-items:baseline;gap:10px;margin-bottom:10px"><span style="font-size:30px;font-weight:600;letter-spacing:-.03em" class="num">${pr}%</span><span class="muted">${daysLeft >= 0 ? `${daysLeft} days until ${fmtDate(p.due)}` : `Ended ${fmtDate(p.due)}`}</span>${over.length ? `<span class="badge red">${ic('clock-alert', 11)}${over.length} overdue</span>` : ''}</div>
+            <div class="row" style="align-items:baseline;gap:10px;margin-bottom:10px"><span style="font-size:30px;font-weight:600;letter-spacing:-.03em" class="num">${pr}%</span><span class="muted">${daysLeft >= 0 ? `${daysLeft} days until ${fmtDate(p.due)}` : `Ended ${fmtDate(p.due)}`}${annText ? ` · <span style="color:#8b5cf6;font-weight:500">${annText}</span>` : ''}</span>${over.length ? `<span class="badge red">${ic('clock-alert', 11)}${over.length} overdue</span>` : ''}</div>
             <div class="stackbar" style="height:8px;margin-bottom:12px">${cnt.map(c => `<i style="width:${(c.n / Math.max(ts.length, 1)) * 100}%;background:var(--st-${c.s.id})" title="${c.s.name}: ${c.n}"></i>`).join('')}</div>
             <div class="row" style="flex-wrap:wrap;gap:14px;font-size:12.5px">${cnt.map(c => `<button class="row" style="gap:5px" data-a="goFilteredList" data-id="${p.id}" data-st="${c.s.id}">${stIcon(c.s.id, 12)}<span class="muted">${c.s.name}</span><b class="num" style="font-weight:600">${c.n}</b></button>`).join('')}</div>
           </div></section>
@@ -39,8 +43,9 @@ export function projOverview(p) {
           <dt>${ic('circle-dot', 14)}Status</dt><dd><button class="pillbtn" data-a="pop" data-pop="pstatus" data-id="${p.id}">${pStatus(p.status)}</button></dd>
           <dt>${ic('tag', 14)}Tags</dt><dd class="row" style="gap:4px;flex-wrap:wrap">${(p.tags || []).length ? (p.tags || []).map(t => `<span class="badge" style="font-size:11px;padding:2px 7px;font-weight:500">${esc(t)}</span>`).join('') : '<span class="faint">Belum ada tag</span>'}</dd>
           ${webLink ? `<dt>${ic('globe', 14)}Link Lomba</dt><dd><a href="${esc(webLink.url)}" target="_blank" rel="noopener noreferrer" class="res-link" style="font-size:12.5px" title="${esc(webLink.url)}"><span class="trunc">${esc(webLink.label)}</span> ${ic('arrow-up-right', 11)}</a></dd>` : ''}
-          <dt>${ic('calendar', 14)}Start</dt><dd><span class="pillbtn num">${fmtDate(p.start, true)}</span></dd>
-          <dt>${ic('flag', 14)}Due</dt><dd><span class="pillbtn num">${fmtDate(p.due, true)}</span></dd>
+          <dt>${ic('calendar', 14)}Start</dt><dd><button class="pillbtn num" data-a="pop" data-pop="date" data-field="start" data-ctx="project" data-id="${p.id}" title="Klik untuk ubah tanggal mulai">${p.start ? fmtDate(p.start, true) : '<span class="faint">Atur tanggal</span>'}</button></dd>
+          <dt>${ic('flag', 14)}Due</dt><dd><button class="pillbtn num" data-a="pop" data-pop="date" data-field="due" data-ctx="project" data-id="${p.id}" title="Klik untuk ubah tenggat waktu">${p.due ? fmtDate(p.due, true) : '<span class="faint">Atur deadline</span>'}</button></dd>
+          <dt>${ic('megaphone', 14)}Pengumuman</dt><dd><button class="pillbtn num" data-a="pop" data-pop="date" data-field="announce" data-ctx="project" data-id="${p.id}" title="Klik untuk ubah tanggal pengumuman" style="${p.status === 'waiting' || p.announce ? 'color:#8b5cf6;border-color:rgba(139,92,246,0.3)' : ''}">${p.announce ? fmtDate(p.announce, true) : '<span class="faint">Atur pengumuman</span>'}</button></dd>
         </dl></div></section>
         <section class="panel">
           <div class="panel-h">

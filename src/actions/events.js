@@ -107,3 +107,73 @@ try {
 } catch {
   /* not supported here; safe to skip */
 }
+
+// Calendar wheel / scroll to change month
+let calWheelCooldown = 0;
+let calWheelAccum = 0;
+
+document.addEventListener(
+  'wheel',
+  e => {
+    const wrap = e.target.closest?.('.cal-g, .cal-month-wrap, .cal-toolbar');
+    if (!wrap) return;
+
+    // Do not intercept if an overlay, modal, drawer, palette, or popover is open
+    if (S.ui.pop || S.ui.modals.length || S.ui.palette || S.ui.drawer) return;
+
+    const now = Date.now();
+    if (now - calWheelCooldown < 400) {
+      e.preventDefault();
+      return;
+    }
+
+    const dy = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    if (Math.abs(dy) < 6) return;
+
+    calWheelAccum += dy;
+
+    if (Math.abs(calWheelAccum) >= 30) {
+      const dir = calWheelAccum > 0 ? 1 : -1;
+      calWheelAccum = 0;
+      calWheelCooldown = now;
+      e.preventDefault();
+      A.calNav({ dataset: { d: dir } });
+    }
+  },
+  { passive: false },
+);
+
+// Calendar touch swipe to change month
+let touchStartX = 0;
+let touchStartY = 0;
+let touchStartTime = 0;
+
+document.addEventListener(
+  'touchstart',
+  e => {
+    const grid = e.target.closest?.('.cal-g');
+    if (!grid || e.touches.length !== 1) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchStartTime = Date.now();
+  },
+  { passive: true },
+);
+
+document.addEventListener(
+  'touchend',
+  e => {
+    if (!touchStartTime || Date.now() - touchStartTime > 600) return;
+    const grid = e.target.closest?.('.cal-g');
+    if (!grid || !e.changedTouches.length) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    touchStartTime = 0;
+
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      const dir = dx < 0 ? 1 : -1;
+      A.calNav({ dataset: { d: dir } });
+    }
+  },
+  { passive: true },
+);

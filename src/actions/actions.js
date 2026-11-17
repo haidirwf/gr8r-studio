@@ -27,6 +27,7 @@ import { effectiveDark } from '../core/theme.js';
 import { mutate, toast } from '../ui/toast.js';
 import { autosize, focusKey, fxSet, go, render } from '../shell/render.js';
 import { viewOf } from '../shell/view-engine.js';
+import { renderAgendaHtml, syncCalCursor } from '../views/calendar.js';
 import { TEMPLATES, closeModal, openModal } from '../overlays/modals.js';
 import { closePop, openPop, tgt } from '../overlays/popovers.js';
 import { strengthMeter } from '../pages/settings.js';
@@ -360,6 +361,22 @@ A.popPick = el => {
     render();
     toast(`${m.name} is now ${v === 'Admin' ? 'an' : 'a'} ${v}`);
     return;
+  }
+  if (p.isProject || p.ctx === 'project') {
+    const pr = proj(p.id);
+    if (pr) {
+      const field = p.field;
+      v = v || null;
+      mutate(() => {
+        pr[field] = v;
+      });
+      saveProjectToCloud(pr);
+      flushCloudSync();
+      S.ui.pop = null;
+      render();
+      toast('Tanggal proyek diperbarui');
+      return;
+    }
   }
   const field = { status: 'status', priority: 'priority', assignee: 'assignee', project: 'project', recur: 'recur', estimate: 'estimate', date: p.field }[
     p.type
@@ -1282,18 +1299,57 @@ A.calNav = el => {
   if (d === 0) {
     S.ui.calDate = iso(TODAY);
     S.ui.calSelectedDate = iso(TODAY);
-  } else if (S.ui.calMode === 'month') {
-    S.ui.calDate = iso(new Date(cur.getFullYear(), cur.getMonth() + d, 1));
+    S.ui.calAnimDir = null;
+  } else if (!S.ui.calMode || S.ui.calMode === 'month') {
+    const nextMonth = new Date(cur.getFullYear(), cur.getMonth() + d, 1);
+    S.ui.calDate = iso(nextMonth);
+    S.ui.calAnimDir = d > 0 ? 'next' : 'prev';
+    const sel = parse(S.ui.calSelectedDate || iso(TODAY));
+    const maxDays = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0).getDate();
+    const targetDay = Math.min(sel.getDate(), maxDays);
+    S.ui.calSelectedDate = iso(new Date(nextMonth.getFullYear(), nextMonth.getMonth(), targetDay));
   } else if (S.ui.calMode === 'week') {
     S.ui.calDate = iso(addD(cur, d * 7));
+    S.ui.calAnimDir = d > 0 ? 'next' : 'prev';
   }
   render();
 };
 A.selectCalDay = el => {
   const d = el.dataset.date || el.dataset.id;
-  if (d) {
-    S.ui.pop = null;
-    S.ui.calSelectedDate = d;
+  if (!d) return;
+  S.ui.pop = null;
+  S.ui.calSelectedDate = d;
+
+  const grid = el.closest('.cal-g');
+  if (grid) {
+    grid.querySelectorAll('.cday.selected').forEach(c => {
+      c.classList.remove('selected');
+      c.setAttribute('aria-selected', 'false');
+    });
+    el.classList.add('selected');
+    el.setAttribute('aria-selected', 'true');
+
+    // Smoothly glide the Excel cursor to target cell
+    syncCalCursor(true);
+
+    // Subtle cell pulse animation
+    el.classList.remove('cday-pulse');
+    void el.offsetWidth;
+    el.classList.add('cday-pulse');
+
+    // Smoothly crossfade and update Agenda
+    const agenda = document.querySelector('.cal-day-agenda');
+    if (agenda) {
+      agenda.classList.add('switching');
+      const projId = el.dataset.project || (S.ui.route === 'project' ? S.ui.params.id : null);
+      const opt = { project: projId, events: true };
+      const curTasks = projId ? tasksOf(projId) : allTasks();
+      setTimeout(() => {
+        agenda.innerHTML = renderAgendaHtml(d, opt, curTasks);
+        agenda.classList.remove('switching');
+      }, 70);
+    }
+  } else {
     render();
   }
 };
@@ -1427,7 +1483,9 @@ A.newProject = () => {
     image: null,
     team: me().team,
     lead: D().me,
+    start: dOff(0),
     due: dOff(14),
+    announce: '',
     tmpl: 'blank',
     tags: ['Webdev'],
     website: '',
@@ -1457,7 +1515,9 @@ A.editProject = el => {
     image: p.image || null,
     team: p.team,
     lead: p.lead,
-    due: p.due,
+    start: p.start || '',
+    due: p.due || '',
+    announce: p.announce || '',
     tmpl: 'blank',
     tags: Array.isArray(p.tags) ? [...p.tags] : [],
     website: web,
@@ -1476,8 +1536,12 @@ export function syncPformFromDom() {
   if (nameEl) f.name = nameEl.value;
   const descEl = $('#p-desc');
   if (descEl) f.desc = descEl.value;
+  const startEl = $('#p-start');
+  if (startEl) f.start = startEl.value;
   const dueEl = $('#p-due');
   if (dueEl) f.due = dueEl.value;
+  const annEl = $('#p-announce');
+  if (annEl) f.announce = annEl.value;
   const webEl = $('#p-link-website');
   if (webEl) f.website = webEl.value;
   const gbEl = $('#p-link-guidebook');
@@ -1612,8 +1676,9 @@ export function createProject(f, tmplId) {
     status: 'planning',
     team: f.team,
     lead: f.lead,
+    start: f.start || dOff(0),
     due: f.due || dOff(30),
-    start: dOff(0),
+    announce: f.announce || null,
     fav: false,
     members: [...new Set([D().me, f.lead])],
     tags: Array.isArray(f.tags) ? [...f.tags] : [],
@@ -1681,7 +1746,7 @@ A.submitProject = () => {
 
   if (m.edit) {
     const existingP = proj(m.edit);
-    const customLinks = (existingP?.links || []).filter(l => !['website', 'guidebook', 'submission', 'group', 'social', '__tags_meta__', '__image_meta__'].includes(l.type));
+    const customLinks = (existingP?.links || []).filter(l => !['website', 'guidebook', 'submission', 'group', 'social', '__tags_meta__', '__image_meta__', '__announce_meta__'].includes(l.type));
     collectedLinks.push(...customLinks);
   }
 
@@ -1699,7 +1764,9 @@ A.submitProject = () => {
           image: f.image !== undefined ? f.image : p.image || null,
           team: f.team,
           lead: f.lead,
-          due: f.due,
+          start: f.start || null,
+          due: f.due || null,
+          announce: f.announce || null,
           tags: Array.isArray(f.tags) ? [...f.tags] : [],
           members: [...new Set([...p.members, f.lead])],
           links: collectedLinks,

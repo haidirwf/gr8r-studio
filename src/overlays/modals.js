@@ -329,18 +329,27 @@ export function projectModal(m, H) {
     </div>
     <div class="field" style="min-width:0"><label class="label" for="p-desc">Deskripsi Singkat</label><textarea class="textarea" id="p-desc" data-in="pform" data-f="desc" rows="2" placeholder="Deskripsi singkat proyek...">${esc(f.desc)}</textarea></div>
     
-    <div class="row" style="gap:12px;min-width:0;align-items:flex-end">
-      <div class="field grow" style="min-width:0;flex:1">
-        <label class="label" for="p-due">Tenggat Waktu</label>
+    <div class="row" style="gap:10px;min-width:0;flex-wrap:wrap">
+      <div class="field grow" style="min-width:130px;flex:1">
+        <label class="label" for="p-start">Tanggal Mulai</label>
+        <input type="date" class="input" id="p-start" data-in="pform" data-f="start" value="${f.start || ''}">
+      </div>
+      <div class="field grow" style="min-width:130px;flex:1">
+        <label class="label" for="p-due">Tenggat Waktu (Due)</label>
         <input type="date" class="input" id="p-due" data-in="pform" data-f="due" value="${f.due || ''}">
       </div>
-      <div class="field grow" style="min-width:0;flex:1">
-        <label class="label" for="p-tag-select">Tag Proyek</label>
-        <select class="select" id="p-tag-select" data-in="pformTagSelect" style="width:100%;height:36px">
-          ${[...new Set([...PROJECT_TAGS, ...(f.tags || [])])].map(t => `<option value="${esc(t)}" ${(f.tags || ['Webdev']).includes(t) ? 'selected' : ''}>${esc(t)}</option>`).join('')}
-          <option value="__custom__">+ Tambah Tag Lain...</option>
-        </select>
+      <div class="field grow" style="min-width:130px;flex:1">
+        <label class="label" for="p-announce">Tanggal Pengumuman</label>
+        <input type="date" class="input" id="p-announce" data-in="pform" data-f="announce" value="${f.announce || ''}">
       </div>
+    </div>
+    
+    <div class="field" style="min-width:0">
+      <label class="label" for="p-tag-select">Tag / Kategori Proyek</label>
+      <select class="select" id="p-tag-select" data-in="pformTagSelect" style="width:100%;height:36px">
+        ${[...new Set([...PROJECT_TAGS, ...(f.tags || [])])].map(t => `<option value="${esc(t)}" ${(f.tags || ['Webdev']).includes(t) ? 'selected' : ''}>${esc(t)}</option>`).join('')}
+        <option value="__custom__">+ Tambah Tag Lain...</option>
+      </select>
     </div>
 
     <div class="field" style="min-width:0"><span class="label">Icon Statis</span><div class="iconpick" role="radiogroup" aria-label="Icon" style="width:100%">${PICONS.map(i => `<button type="button" role="radio" aria-checked="${f.icon === i}" class="${f.icon === i ? 'on' : ''}" data-a="pformSet" data-f="icon" data-v="${i}" aria-label="${i}">${ic(i, 15)}</button>`).join('')}</div></div>

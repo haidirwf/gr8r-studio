@@ -18,7 +18,12 @@ export function projectCard(p) {
     if (p.status === 'complete') {
       dueHtml = `<span class="pcard-due-badge complete">${ic('check-circle', 11)} Selesai</span>`;
     } else if (p.status === 'waiting') {
-      dueHtml = `<span class="pcard-due-badge waiting">${ic('clock', 11)} Pengumuman</span>`;
+      if (p.announce) {
+        const annDays = diffD(parse(p.announce), TODAY);
+        dueHtml = `<span class="pcard-due-badge waiting" title="Pengumuman: ${fmtDate(p.announce)}">${ic('megaphone', 11)} ${annDays === 0 ? 'Pengumuman hari ini' : annDays > 0 ? `Pengumuman ${annDays}h lagi` : `Pengumuman ${fmtDate(p.announce)}`}</span>`;
+      } else {
+        dueHtml = `<span class="pcard-due-badge waiting">${ic('clock', 11)} Pengumuman</span>`;
+      }
     } else if (days < 0) {
       dueHtml = `<span class="pcard-due-badge overdue">${ic('alert-circle', 11)} Lewat ${Math.abs(days)}h</span>`;
     } else if (days === 0) {
@@ -36,6 +41,7 @@ export function projectCard(p) {
   const msCount = (p.milestones || []).length;
   const metricsHtml = [
     `<span class="pcard-metric-pill" title="${ts.length} total tugas">${ic('check-square', 11)}<span>${open} tugas aktif</span></span>`,
+    p.announce && p.status !== 'waiting' ? `<span class="pcard-metric-pill" title="Tanggal Pengumuman: ${fmtDate(p.announce)}">${ic('megaphone', 11)}<span>${fmtDate(p.announce)}</span></span>` : '',
     linkCount ? `<span class="pcard-metric-pill" title="${linkCount} tautan kebutuhan lomba">${ic('link', 11)}<span>${linkCount} link</span></span>` : '',
     msCount ? `<span class="pcard-metric-pill" title="${msCount} milestone lomba">${ic('flag', 11)}<span>${msCount} milestone</span></span>` : '',
   ].filter(Boolean).join('');

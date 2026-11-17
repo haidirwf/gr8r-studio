@@ -1,7 +1,7 @@
 /* ---------- CALENDAR (Month Only & Extra Spacious) ---------- */
 import { MONL, TODAY, WD, addD, diffD, esc, fmtDate, iso, parse, sod } from '../core/utils.js';
 import { ic } from '../core/icons.js';
-import { D, S, allTasks, pColor, proj, taskColor } from '../core/store.js';
+import { D, S, allTasks, pColor, proj, taskColor, tasksOf } from '../core/store.js';
 import { prIcon, stIcon } from '../ui/helpers.js';
 import { fxc } from '../shell/render.js';
 import { applyView, viewOf } from '../shell/view-engine.js';
@@ -14,6 +14,27 @@ export function startOfWeek(d) {
 }
 
 function renderCalItem(it) {
+  if (it.prjAnnounce) {
+    const p = it.prjAnnounce;
+    const daysLeft = diffD(parse(p.announce), TODAY);
+    return `<div class="cal-agenda-card prj-agenda-card" style="--c:#8b5cf6" data-a="go" data-r="project" data-id="${p.id}" data-tab="overview" data-ctx="project" role="button" tabindex="0">
+      <div class="cal-agenda-check" style="background:#8b5cf6;color:#fff;border-color:#8b5cf6;cursor:pointer;overflow:hidden" title="Pengumuman Lomba">
+        ${ic('megaphone', 13)}
+      </div>
+      <div class="cal-agenda-info grow trunc">
+        <div class="row" style="gap:6px;align-items:center;margin-bottom:2px">
+          <span class="badge" style="font-size:10px;padding:1px 6px;background:#8b5cf6;color:#fff;font-weight:600">PENGUMUMAN</span>
+          ${p.tags && p.tags.length ? p.tags.slice(0, 2).map(tg => `<span class="badge" style="font-size:10px;padding:1px 5px">${esc(tg)}</span>`).join('') : ''}
+        </div>
+        <div class="cal-agenda-title-text" style="font-weight:600;font-size:14px">${esc(p.name)}</div>
+        <div class="cal-agenda-meta">
+          <span class="cal-meta-badge" style="background:rgba(139,92,246,0.15);color:#a78bfa">${ic('megaphone', 11)} ${fmtDate(p.announce)}</span>
+          <span class="muted" style="font-size:11.5px">${daysLeft === 0 ? 'Hari ini!' : daysLeft > 0 ? `${daysLeft} hari lagi` : `${Math.abs(daysLeft)} hari lalu`}</span>
+        </div>
+      </div>
+      <span class="ibtn ibtn-xs text-muted" style="color:var(--text-2)">${ic('arrow-up-right', 14)}</span>
+    </div>`;
+  }
   if (it.prj) {
     const p = it.prj;
     const daysLeft = diffD(parse(p.due), TODAY);
@@ -59,19 +80,98 @@ function renderCalItem(it) {
   </div>`;
 }
 
+export function renderAgendaHtml(selectedDate, opt = {}, ts = null) {
+  const curTasks = ts || (opt.project ? tasksOf(opt.project) : allTasks());
+  const evs = opt.events ? D().events.filter(e => !opt.project || e.project === opt.project) : [];
+  const projsWithDue = (D().projects || []).filter(p => !p.archived && p.due && (!opt.project || p.id === opt.project));
+  const projsWithAnnounce = (D().projects || []).filter(p => !p.archived && p.announce && (!opt.project || p.id === opt.project));
+  const selectedItems = [
+    ...projsWithDue.filter(p => p.due === selectedDate).map(p => ({ prj: p })),
+    ...projsWithAnnounce.filter(p => p.announce === selectedDate).map(p => ({ prjAnnounce: p })),
+    ...evs.filter(e => e.date === selectedDate).map(e => ({ ev: e })),
+    ...curTasks.filter(t => t.due === selectedDate).map(t => ({ t })),
+  ];
+  const isSelectedToday = diffD(parse(selectedDate), TODAY) === 0;
+
+  return `<div class="cal-agenda-header">
+    <div class="cal-agenda-title">
+      <span class="cal-agenda-icon">${ic('calendar', 16)}</span>
+      <span class="cal-agenda-date">${fmtDate(selectedDate, true)}${isSelectedToday ? ' · Hari Ini' : ''}</span>
+      <span class="badge ${selectedItems.length ? 'badge-primary' : ''}">${selectedItems.length} agenda & tugas</span>
+    </div>
+    <button class="btn btn-sm btn-secondary" data-a="newTask" data-due="${selectedDate}" ${opt.project ? `data-project="${opt.project}"` : ''}>
+      ${ic('plus', 13)}<span>Tambah</span>
+    </button>
+  </div>
+  <div class="cal-agenda-list">
+    ${selectedItems.length
+      ? selectedItems.map(renderCalItem).join('')
+      : `<div class="cal-agenda-empty">Tidak ada deadline atau tugas pada tanggal ini. <button class="btn-link" data-a="newTask" data-due="${selectedDate}" ${opt.project ? `data-project="${opt.project}"` : ''}>+ Tambah tugas baru</button></div>`
+    }
+  </div>`;
+}
+
+export function syncCalCursor(animate = true) {
+  const grid = document.querySelector('.cal-g');
+  if (!grid) return;
+  let cursor = grid.querySelector('.cal-excel-cursor');
+  if (!cursor) {
+    cursor = document.createElement('div');
+    cursor.className = 'cal-excel-cursor';
+    cursor.id = 'calExcelCursor';
+    cursor.setAttribute('aria-hidden', 'true');
+    cursor.innerHTML = '<span class="cal-cursor-handle"></span>';
+    grid.prepend(cursor);
+  }
+  const selDay = grid.querySelector('.cday.selected') || grid.querySelector('.cday.today') || grid.querySelector('.cday');
+  if (!selDay) {
+    cursor.style.opacity = '0';
+    return;
+  }
+  const x = selDay.offsetLeft;
+  const y = selDay.offsetTop;
+  const w = selDay.offsetWidth;
+  const h = selDay.offsetHeight;
+
+  if (!animate) {
+    cursor.style.transition = 'none';
+    cursor.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    cursor.style.width = `${w}px`;
+    cursor.style.height = `${h}px`;
+    cursor.style.opacity = '1';
+    void cursor.offsetHeight;
+    cursor.style.transition = '';
+  } else {
+    cursor.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    cursor.style.width = `${w}px`;
+    cursor.style.height = `${h}px`;
+    cursor.style.opacity = '1';
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', () => syncCalCursor(false), { passive: true });
+}
+
 export function calendarHtml(ts, opt = {}) {
   const cur = parse(S.ui.calDate || iso(TODAY));
   const selectedDate = S.ui.calSelectedDate || iso(TODAY);
   const evs = opt.events ? D().events.filter(e => !opt.project || e.project === opt.project) : [];
   const projsWithDue = (D().projects || []).filter(p => !p.archived && p.due && (!opt.project || p.id === opt.project));
+  const projsWithAnnounce = (D().projects || []).filter(p => !p.archived && p.announce && (!opt.project || p.id === opt.project));
   const itemsOn = ds => [
     ...projsWithDue.filter(p => p.due === ds).map(p => ({ prj: p })),
+    ...projsWithAnnounce.filter(p => p.announce === ds).map(p => ({ prjAnnounce: p })),
     ...evs.filter(e => e.date === ds).map(e => ({ ev: e })),
     ...ts.filter(t => t.due === ds).map(t => ({ t })),
   ];
   const wdn = Array.from({ length: 7 }, (_, i) => WD[(i + S.prefs.weekStart) % 7]);
 
   const chip = it => {
+    if (it.prjAnnounce) {
+      const p = it.prjAnnounce;
+      return `<button class="cev prj-due" style="--c:#8b5cf6;background:rgba(139,92,246,0.18);border-left:3px solid #8b5cf6" data-a="go" data-r="project" data-id="${p.id}" data-tab="overview" data-ctx="project" title="Pengumuman Lomba: ${esc(p.name)}">${ic('megaphone', 11)}<span class="trunc">Pengumuman: ${esc(p.name)}</span></button>`;
+    }
     if (it.prj) {
       const p = it.prj;
       return `<button class="cev prj-due" style="--c:${pColor(p)}" data-a="go" data-r="project" data-id="${p.id}" data-tab="overview" data-ctx="project" title="Deadline Proyek: ${esc(p.name)}">${ic('flag', 11)}<span class="trunc">Deadline: ${esc(p.name)}</span></button>`;
@@ -98,9 +198,8 @@ export function calendarHtml(ts, opt = {}) {
   const start = startOfWeek(first);
   const cells = Array.from({ length: 42 }, (_, i) => addD(start, i));
   const trimmed = cells[35].getMonth() !== cur.getMonth() ? cells.slice(0, 35) : cells;
-
-  const selectedItems = itemsOn(selectedDate);
-  const isSelectedToday = diffD(parse(selectedDate), TODAY) === 0;
+  const animClass = S.ui.calAnimDir ? ` anim-${S.ui.calAnimDir}` : '';
+  S.ui.calAnimDir = null;
 
   return `<div class="cal">
     <div class="cal-toolbar">
@@ -113,21 +212,24 @@ export function calendarHtml(ts, opt = {}) {
       </div>
     </div>
 
-    <div class="cal-month-wrap">
+    <div class="cal-month-wrap${animClass}">
       <div class="cal-h">${wdn.map(d => `<div>${d}</div>`).join('')}</div>
-      <div class="cal-g" style="grid-template-rows:repeat(${trimmed.length / 7},minmax(auto,1fr))">${trimmed
+      <div class="cal-g" style="grid-template-rows:repeat(${trimmed.length / 7},minmax(auto,1fr))">
+        <div class="cal-excel-cursor" id="calExcelCursor" aria-hidden="true"><span class="cal-cursor-handle"></span></div>
+        ${trimmed
         .map(d => {
           const ds = iso(d);
           const items = itemsOn(ds);
           const isToday = diffD(d, TODAY) === 0;
           const isSelected = ds === selectedDate;
           const isOut = d.getMonth() !== cur.getMonth();
-          return `<div class="cday ${isOut ? 'out' : ''} ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" data-drop-day="${ds}" data-a="selectCalDay" data-date="${ds}" data-ctx="calday" data-id="${ds}">
+          return `<div class="cday ${isOut ? 'out' : ''} ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" data-drop-day="${ds}" data-a="selectCalDay" data-date="${ds}" data-ctx="calday" data-id="${ds}" ${opt.project ? `data-project="${opt.project}"` : ''} tabindex="0" role="gridcell" aria-selected="${isSelected ? 'true' : 'false'}">
             <div class="cday-top">
               <span class="dn" ${isToday ? 'aria-current="date"' : ''}>${d.getDate()}</span>
               <button class="ibtn ibtn-xs add hide-m" data-a="newTask" data-due="${ds}" ${opt.project ? `data-project="${opt.project}"` : ''} aria-label="Tambah tugas pada ${fmtDate(ds)}">${ic('plus', 13)}</button>
             </div>
             <div class="cday-dots">${items.slice(0, 4).map(it => {
+              if (it.prjAnnounce) return `<span class="cday-dot" style="--c:#8b5cf6;background:#8b5cf6;box-shadow:0 0 0 1px #fff;transform:scale(1.2)" title="Pengumuman Lomba: ${esc(it.prjAnnounce.name)}"></span>`;
               if (it.prj) return `<span class="cday-dot" style="--c:${pColor(it.prj)};background:var(--c);box-shadow:0 0 0 1px #fff;transform:scale(1.2)" title="Deadline Proyek: ${esc(it.prj.name)}"></span>`;
               const dotC = it.t ? taskColor(it.t) : (it.ev ? pColor(proj(it.ev.project)) : 'var(--amber, #f59e0b)');
               return `<span class="cday-dot" style="--c:${dotC}"></span>`;
@@ -141,22 +243,7 @@ export function calendarHtml(ts, opt = {}) {
         .join('')}</div>
 
       <div class="cal-day-agenda">
-        <div class="cal-agenda-header">
-          <div class="cal-agenda-title">
-            <span class="cal-agenda-icon">${ic('calendar', 16)}</span>
-            <span class="cal-agenda-date">${fmtDate(selectedDate, true)}${isSelectedToday ? ' · Hari Ini' : ''}</span>
-            <span class="badge ${selectedItems.length ? 'badge-primary' : ''}">${selectedItems.length} agenda & tugas</span>
-          </div>
-          <button class="btn btn-sm btn-secondary" data-a="newTask" data-due="${selectedDate}" ${opt.project ? `data-project="${opt.project}"` : ''}>
-            ${ic('plus', 13)}<span>Tambah</span>
-          </button>
-        </div>
-        <div class="cal-agenda-list">
-          ${selectedItems.length
-            ? selectedItems.map(renderCalItem).join('')
-            : `<div class="cal-agenda-empty">Tidak ada deadline atau tugas pada tanggal ini. <button class="btn-link" data-a="newTask" data-due="${selectedDate}" ${opt.project ? `data-project="${opt.project}"` : ''}>+ Tambah tugas baru</button></div>`
-          }
-        </div>
+        ${renderAgendaHtml(selectedDate, opt, ts)}
       </div>
     </div>
   </div>`;

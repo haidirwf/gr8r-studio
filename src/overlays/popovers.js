@@ -29,9 +29,11 @@ export function openPop(el, extra = {}) {
     ...extra,
   };
   if (d.pop === 'date') {
-    const tk = task(d.id);
-    const cur = S.ui.pop.id === '__form' ? S.ui.form[d.field] : d.field === 'subdue' ? tk?.subtasks[+d.i]?.due : tk?.[d.field];
+    const isProj = d.ctx === 'project';
+    const targetObj = isProj ? proj(d.id) : task(d.id);
+    const cur = S.ui.pop.id === '__form' ? S.ui.form[d.field] : d.field === 'subdue' ? targetObj?.subtasks[+d.i]?.due : targetObj?.[d.field];
     S.ui.pop.m = iso(cur ? parse(cur) : TODAY);
+    if (isProj) S.ui.pop.isProject = true;
   }
   render();
   setTimeout(() => {
@@ -64,6 +66,7 @@ export function closePop() {
   }
 }
 export function tgt(p) {
+  if (p.isProject || p.ctx === 'project') return proj(p.id);
   return p.id === '__form' ? S.ui.form : task(p.id);
 }
 export function popList(items, opt = {}) {
@@ -183,12 +186,15 @@ export function popHtml(p) {
       break;
     }
     case 'date': {
-      const val = p.field === 'subdue' ? t?.subtasks[p.i]?.due : t?.[p.field];
+      const isProj = p.isProject || p.ctx === 'project';
+      const targetObj = isProj ? proj(p.id) : (p.id === '__form' ? S.ui.form : task(p.id));
+      const val = p.field === 'subdue' ? targetObj?.subtasks[p.i]?.due : targetObj?.[p.field];
       const q = [
         ['Today', 0],
         ['Tomorrow', 1],
         ['Next week', 7 - ((TODAY.getDay() + 6) % 7)],
         ['In 2 weeks', 14],
+        ['In 1 month', 30],
       ];
       inner = `<div class="row" style="gap:4px;padding:4px;flex-wrap:wrap">${q.map(([n, d]) => `<button class="badge" data-a="popPick" data-v="${dOff(d)}" style="cursor:pointer">${n}</button>`).join('')}${val ? `<button class="badge" data-a="popPick" data-v="" style="cursor:pointer;color:var(--red)">Clear</button>` : ''}</div><div class="msep"></div>${miniCal(p, val)}`;
       style = 'min-width:0';

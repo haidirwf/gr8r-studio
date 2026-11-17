@@ -300,7 +300,10 @@ export function mapProjectToRow(p, userId) {
     archived_at: p.archivedAt
       ? (typeof p.archivedAt === 'number' ? new Date(p.archivedAt).toISOString() : p.archivedAt)
       : (p.archived ? new Date().toISOString() : null),
-    links,
+    links: [
+      ...links,
+      ...(p.announce ? [{ id: '__announce_meta__', type: '__announce_meta__', label: '__announce_meta__', url: p.announce }] : []),
+    ],
     milestones: Array.isArray(p.milestones) ? p.milestones : [],
     tags,
   };
@@ -323,6 +326,11 @@ export function mapRowToProject(row) {
     const imgMeta = row.links.find(l => l.type === '__image_meta__');
     if (imgMeta && imgMeta.url) image = imgMeta.url;
   }
+  let announce = row.announce || null;
+  if (!announce && Array.isArray(row.links)) {
+    const annMeta = row.links.find(l => l.type === '__announce_meta__');
+    if (annMeta && annMeta.url) announce = annMeta.url;
+  }
   return {
     id: row.id,
     key: (row.name || 'PRJ').toUpperCase().slice(0, 5),
@@ -335,11 +343,14 @@ export function mapRowToProject(row) {
     status: row.status || 'active',
     due: row.due ? row.due.slice(0, 10) : null,
     start: row.start_date ? row.start_date.slice(0, 10) : null,
+    announce: announce ? announce.slice(0, 10) : null,
     progress: row.progress || 0,
     fav: Boolean(row.fav),
     archived: Boolean(row.archived),
     archivedAt: row.archived_at ? new Date(row.archived_at).getTime() : null,
-    links: Array.isArray(row.links) ? row.links.filter(l => l.type !== '__tags_meta__' && l.type !== '__image_meta__') : [],
+    links: Array.isArray(row.links)
+      ? row.links.filter(l => !['__tags_meta__', '__image_meta__', '__announce_meta__'].includes(l.type))
+      : [],
     milestones: Array.isArray(row.milestones) ? row.milestones : [],
     tags: Array.isArray(tags) ? tags : [],
     members: [row.user_id],

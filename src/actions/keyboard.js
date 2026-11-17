@@ -175,6 +175,32 @@ document.addEventListener('keydown', e => {
   }
   if (typing || mod || e.altKey) return;
   if (S.ui.auth) return;
+  // Excel-style smooth arrow navigation on Calendar
+  if (!S.ui.pop && !S.ui.modals.length) {
+    const grid = document.querySelector('.cal-g');
+    if (grid && (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      const activeCday = document.activeElement?.closest?.('.cday') || grid.querySelector('.cday.selected') || grid.querySelector('.cday.today');
+      if (activeCday) {
+        const days = Array.from(grid.querySelectorAll('.cday'));
+        const curIdx = days.indexOf(activeCday);
+        if (curIdx !== -1) {
+          let nextIdx = curIdx;
+          if (e.key === 'ArrowLeft') nextIdx = curIdx - 1;
+          else if (e.key === 'ArrowRight') nextIdx = curIdx + 1;
+          else if (e.key === 'ArrowUp') nextIdx = curIdx - 7;
+          else if (e.key === 'ArrowDown') nextIdx = curIdx + 7;
+
+          if (nextIdx >= 0 && nextIdx < days.length) {
+            e.preventDefault();
+            const target = days[nextIdx];
+            target.focus?.({ preventScroll: true });
+            A.selectCalDay(target);
+            return;
+          }
+        }
+      }
+    }
+  }
   // number keys inside status popover
   if (S.ui.pop?.type === 'status' && /^[1-5]$/.test(e.key)) {
     A.popPick({ dataset: { v: STATUSES[+e.key - 1].id } });

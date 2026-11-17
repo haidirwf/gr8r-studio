@@ -2,13 +2,14 @@
 import { $, MOD, MONL, TODAY, WD, addD, dOff, diffD, esc, fmtDate, iso, parse } from '../core/utils.js';
 import { ic, wsLogo } from '../core/icons.js';
 import { LABELS, PRIOS, PSTAT, STATUSES } from '../core/constants.js';
-import { D, S, allTasks, canSee, me, mem, pColor, proj, task, visibleProjects } from '../core/store.js';
+import { D, S, allTasks, canSee, me, mem, note, pColor, proj, task, visibleProjects } from '../core/store.js';
 import { av, avStack, prIcon, stIcon } from '../ui/helpers.js';
 import { focusKey, render } from '../shell/render.js';
 import { FIELDS, viewOf } from '../shell/view-engine.js';
 import { TCOLS } from '../views/table.js';
 import { startOfWeek } from '../views/calendar.js';
 import { ctxMenu } from './context-menu.js';
+import { NOTE_COLORS } from '../pages/notes.js';
 
 export function openPop(el, extra = {}) {
   const r = el.getBoundingClientRect();
@@ -337,7 +338,7 @@ export function popHtml(p) {
         ts
           .map(
             x =>
-              `<button class="mi" data-a="openTask" data-id="${x.id}">${stIcon(x.status)}<span class="trunc">${esc(x.title)}</span><span class="r">${av(x.assignee, 'sm', false)}</span></button>`,
+              `<button class="mi" data-a="openQuickTask" data-id="${x.id}">${stIcon(x.status)}<span class="trunc">${esc(x.title)}</span><span class="r">${av(x.assignee, 'sm', false)}</span></button>`,
           )
           .join('');
       style = 'width:280px';
@@ -354,6 +355,17 @@ export function popHtml(p) {
       inner = `<div class="row" style="gap:2px;padding:2px">${['👍', '🎉', '❤️', '👀', '🚀', '✅'].map(e => `<button class="ibtn" data-a="react" data-id="${p.id}" data-e="${e}" style="font-size:16px" aria-label="React ${e}">${e}</button>`).join('')}</div>`;
       style = 'min-width:0';
       break;
+    case 'noteColor': {
+      const nt = note(p.id);
+      inner = `<div class="note-swatches" style="padding:6px;gap:6px">${Object.entries(NOTE_COLORS)
+        .map(
+          ([k, c]) =>
+            `<button type="button" role="radio" aria-checked="${nt?.color === k}" class="note-swatch ${nt?.color === k ? 'on' : ''}" style="--sw-bg:${c.bg}" data-a="setNoteColor" data-id="${p.id}" data-c="${k}" title="${c.name}">${nt?.color === k ? ic('check', 11) : ''}</button>`,
+        )
+        .join('')}</div>`;
+      style = 'min-width:0';
+      break;
+    }
     case 'ctx':
       inner = ctxMenu(p);
       break;

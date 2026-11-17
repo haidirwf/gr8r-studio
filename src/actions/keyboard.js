@@ -183,7 +183,7 @@ document.addEventListener('keydown', e => {
   const k = e.key;
   if (gPending && Date.now() - gPending < 1200) {
     gPending = 0;
-    const map = { h: 'home', t: 'mytasks', p: 'projects', i: 'inbox', c: 'calendar', s: 'settings', n: 'notifications', a: 'activity', m: 'members' };
+    const map = { h: 'home', t: 'calendar', p: 'projects', i: 'calendar', c: 'calendar', s: 'settings', n: 'calendar', a: 'calendar', m: 'calendar' };
     if (map[k.toLowerCase()]) {
       e.preventDefault();
       go(map[k.toLowerCase()]);

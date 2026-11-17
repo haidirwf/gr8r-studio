@@ -4,6 +4,7 @@
 import { $$ } from '../core/utils.js';
 import { S } from '../core/store.js';
 import { render } from '../shell/render.js';
+import { placeAnchoredModals } from '../overlays/modals.js';
 import { A, BLUR, DBL, IN } from './actions.js';
 
 document.addEventListener(
@@ -87,6 +88,7 @@ addEventListener('resize', () => {
     S.ui.pop = null;
     render();
   }
+  placeAnchoredModals();
 });
 try {
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {

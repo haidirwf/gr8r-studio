@@ -4,7 +4,7 @@
 import { MOD, TODAY, ago, diffD, esc, fmtDate, parse, relDate } from '../core/utils.js';
 import { ic } from '../core/icons.js';
 import { D, S, commentsOf, isOver, mem, pColor, proj, task } from '../core/store.js';
-import { FT, av, filePrev, fileType, fmtComment, lbl, progBar } from '../ui/helpers.js';
+import { FT, av, filePrev, fileType, fmtComment, lbl, linkIcon, progBar } from '../ui/helpers.js';
 import { fxc } from '../shell/render.js';
 import { cellAssignee, cellDue, cellPrio, cellProject, cellStatus } from '../components/task-list.js';
 import { modalHtml } from './modals.js';
@@ -19,7 +19,8 @@ export function renderLayer() {
     h += (u.drawerFull ? `<div class="drawer-scrim full${u.fx.drawer ? ' enter' : ''}" data-a="closeDrawer"></div>` : '') + drawerHtml(task(u.drawer));
   u.modals.forEach((m, i) => {
     const en = u.fx.modal === i + 1;
-    h += `<div class="scrim${en ? ' enter' : ''}" data-a="closeModal" style="z-index:${60 + i * 2}"></div><div class="modal-wrap" data-a="closeModalBg" style="z-index:${61 + i * 2}">${en ? modalHtml(m).replace('class="modal ', 'class="modal enter ') : modalHtml(m)}</div>`;
+    const isAnchored = m.anchor && m.type === 'quickTask';
+    h += `<div class="scrim${en ? ' enter' : ''}${isAnchored ? ' scrim-anchored' : ''}" data-a="closeModal" style="z-index:${60 + i * 2}"></div><div class="modal-wrap${isAnchored ? ' modal-anchored-wrap' : ''}" data-a="closeModalBg" style="z-index:${61 + i * 2}">${en ? modalHtml(m).replace('class="modal ', 'class="modal enter ') : modalHtml(m)}</div>`;
   });
   if (u.palette) h += `<div class="scrim" data-a="closePalette" style="z-index:89"></div>${paletteHtml()}`;
   if (u.pop) h += popHtml(u.pop);
@@ -61,6 +62,22 @@ export function drawerHtml(t) {
       sub
         ? subtaskHtml(t, sub)
         : `
+      ${
+        p && p.links && p.links.length
+          ? `<div class="row" style="gap:6px;padding:8px 12px;background:var(--surface-2);border-radius:var(--rad);margin-bottom:12px;font-size:12px;flex-wrap:wrap;align-items:center;border:1px solid var(--border-subtle)">
+        <span class="faint" style="font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;display:flex;align-items:center;gap:4px">${ic('link', 12)}Quick Links:</span>
+        ${p.links
+          .map(
+            l => `<a class="chip" data-a="openProjectLink" data-url="${esc(l.url)}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);color:var(--text);text-decoration:none;font-size:11.5px;font-weight:500" title="${esc(l.label)}">
+            ${linkIcon(l.type, 12)}
+            <span>${esc(l.label)}</span>
+            <span style="opacity:0.6">${ic('external-link', 9)}</span>
+          </a>`,
+          )
+          .join('')}
+      </div>`
+          : ''
+      }
       ${t.status === 'done' ? `<div class="alert ok" style="margin-bottom:12px">${ic('circle-check', 15)}<span>Completed ${t.completedAt ? ago(t.completedAt) : ''}. <button class="link" data-a="toggleDone" data-id="${t.id}">Reopen task</button></span></div>` : isOver(t) ? `<div class="alert danger" style="margin-bottom:12px">${ic('clock-alert', 15)}<span>Overdue by ${-diffD(parse(t.due), TODAY)} day${-diffD(parse(t.due), TODAY) > 1 ? 's' : ''}. <button class="link" data-a="pop" data-pop="date" data-field="due" data-id="${t.id}">Reschedule</button></span></div>` : ''}
       <textarea class="ttl-edit" id="d-title" rows="1" data-autosize data-blur="commitDrawerTitle" data-key-enter="blur" data-id="${t.id}" aria-label="Task title">${esc(t.title)}</textarea>
       <dl class="kv" style="margin-top:12px;${u.drawerFull ? 'grid-template-columns:112px minmax(0,1fr) 112px minmax(0,1fr)' : ''}">

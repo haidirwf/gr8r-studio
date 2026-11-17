@@ -3,8 +3,25 @@
    ===================================================================== */
 import { $, $$, TODAY, addD, dOff, esc, fmtDate, iso, parse, uid } from '../core/utils.js';
 import { PR, PSTAT, ST } from '../core/constants.js';
-import { seed } from '../data/seed.js';
-import { D, DEFAULT_PREFS, S, allTasks, canSee, commentsOf, logAct, me, mem, proj, save, task, tasksOf, visibleProjects } from '../core/store.js';
+import {
+  applyUserSession,
+  clearUserSession,
+  D,
+  S,
+  allNotes,
+  allTasks,
+  canSee,
+  commentsOf,
+  logAct,
+  me,
+  mem,
+  note,
+  proj,
+  save,
+  task,
+  tasksOf,
+  visibleProjects,
+} from '../core/store.js';
 import { fileType, fsize } from '../ui/helpers.js';
 import { effectiveDark } from '../core/theme.js';
 import { mutate, toast } from '../ui/toast.js';
@@ -13,6 +30,21 @@ import { viewOf } from '../shell/view-engine.js';
 import { TEMPLATES, closeModal, openModal } from '../overlays/modals.js';
 import { closePop, openPop, tgt } from '../overlays/popovers.js';
 import { strengthMeter } from '../pages/settings.js';
+import {
+  signIn,
+  signUp,
+  signOut,
+  resetPassword,
+  updatePassword,
+  updateProfile,
+  signInWithOAuth,
+  resendVerification,
+  getSession,
+  fetchAllUserData,
+  deleteProjectFromCloud,
+  deleteTaskFromCloud,
+  deleteNoteFromCloud,
+} from '../core/supabase.js';
 
 export const A = {},
   IN = {},
@@ -175,9 +207,11 @@ A.go = el => {
   go(r, p, { tab: tabOnly });
 };
 A.back = () => {
-  const h = S.ui.history.pop();
-  if (h) go(h.route, h.params, { back: true });
-  else go('home');
+  if (typeof window !== 'undefined' && window.history.length > 1) {
+    window.history.back();
+  } else {
+    go(S.prefs.home || 'calendar');
+  }
 };
 A.reload = () => render();
 A.openProject = el => go('project', { id: el.dataset.id, tab: S.prefs.defaultTab || 'board' });
@@ -498,7 +532,10 @@ export function deleteTasks(ids) {
   D().tasks.forEach(t => (t.deps = t.deps.filter(d => !set.has(d))));
   D().comments = D().comments.filter(c => !set.has(c.task));
   if (set.has(S.ui.drawer)) S.ui.drawer = null;
-  ids.forEach(i => S.ui.sel.delete(i));
+  ids.forEach(i => {
+    S.ui.sel.delete(i);
+    deleteTaskFromCloud(i);
+  });
 }
 A.delTask = el => {
   const t = task(el.dataset.id);
@@ -1179,9 +1216,22 @@ A.colSortPrio = el => {
 /* calendar & timeline */
 A.calNav = el => {
   const d = +el.dataset.d;
-  const cur = parse(S.ui.calDate);
-  S.ui.calDate = d === 0 ? iso(TODAY) : S.ui.calMode === 'month' ? iso(new Date(cur.getFullYear(), cur.getMonth() + d, 1)) : iso(addD(cur, d * 7));
+  const cur = parse(S.ui.calDate || iso(TODAY));
+  if (d === 0) {
+    S.ui.calDate = iso(TODAY);
+    S.ui.calSelectedDate = iso(TODAY);
+  } else if (S.ui.calMode === 'month') {
+    S.ui.calDate = iso(new Date(cur.getFullYear(), cur.getMonth() + d, 1));
+  } else if (S.ui.calMode === 'week') {
+    S.ui.calDate = iso(addD(cur, d * 7));
+  }
   render();
+};
+A.selectCalDay = el => {
+  if (el.dataset.date) {
+    S.ui.calSelectedDate = el.dataset.date;
+    render();
+  }
 };
 A.tlToday = () => {
   const r = $('#tl-right');
@@ -1210,18 +1260,148 @@ A.clearProjFilters = () => {
   S.ui.projStatus = 'all';
   render();
 };
+A.openQuickTask = el => {
+  const id = el.dataset.id;
+  if (!task(id)) return;
+  S.ui.pop = null;
+  const chipRect = el.getBoundingClientRect();
+  const cell = el.closest('.cday') || el.closest('.cal-agenda-card') || el;
+  const cellRect = cell ? cell.getBoundingClientRect() : null;
+
+  openModal({
+    type: 'quickTask',
+    id,
+    anchor: {
+      left: chipRect.left,
+      right: chipRect.right,
+      top: chipRect.top,
+      bottom: chipRect.bottom,
+      width: chipRect.width,
+      height: chipRect.height,
+      cellLeft: cellRect?.left,
+      cellRight: cellRect?.right,
+      cellTop: cellRect?.top,
+      cellBottom: cellRect?.bottom,
+    },
+  });
+};
+A.toggleTaskDone = el => A.toggleDone(el);
+A.goProjectFromTask = el => {
+  const pid = el.dataset.id;
+  closeModal();
+  if (pid) go('project', { id: pid, tab: 'board' });
+};
+A.deleteQuickTask = el => {
+  const id = el.dataset.id;
+  closeModal();
+  mutate(() => {
+    D().tasks = D().tasks.filter(t => t.id !== id);
+  });
+  toast('Tugas dihapus');
+};
 A.newProject = () => {
-  S.ui.pform = { name: '', desc: '', icon: 'folder', color: 'indigo', team: me().team, lead: D().me, due: dOff(30), tmpl: 'blank' };
+  S.ui.pform = {
+    name: '',
+    desc: '',
+    icon: 'trophy',
+    color: 'indigo',
+    team: me().team,
+    lead: D().me,
+    due: dOff(14),
+    tmpl: 'blank',
+    guidebook: '',
+    submission: '',
+    group: '',
+    social: '',
+  };
   S.ui.errors = {};
   S.ui.pop = null;
   openModal({ type: 'project' });
 };
 A.editProject = el => {
   const p = proj(el.dataset.id);
+  if (!p) return;
   S.ui.pop = null;
-  S.ui.pform = { name: p.name, desc: p.desc, icon: p.icon, color: p.color, team: p.team, lead: p.lead, due: p.due, tmpl: 'blank' };
+  const gb = p.links?.find(l => l.type === 'guidebook')?.url || '';
+  const sub = p.links?.find(l => l.type === 'submission')?.url || '';
+  const grp = p.links?.find(l => l.type === 'group')?.url || '';
+  const soc = p.links?.find(l => l.type === 'social')?.url || '';
+  S.ui.pform = {
+    name: p.name,
+    desc: p.desc,
+    icon: p.icon,
+    color: p.color,
+    team: p.team,
+    lead: p.lead,
+    due: p.due,
+    tmpl: 'blank',
+    guidebook: gb,
+    submission: sub,
+    group: grp,
+    social: soc,
+  };
   S.ui.errors = {};
   openModal({ type: 'project', edit: p.id });
+};
+A.openProjectLink = (el, e) => {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  const url = el.getAttribute('href') || el.dataset.url;
+  if (url) window.open(url, '_blank', 'noopener,noreferrer');
+};
+A.addProjectLink = el => {
+  const pid = el.dataset.id;
+  const p = proj(pid);
+  if (!p) return;
+  openModal({ type: 'projectLink', pid });
+};
+A.submitProjectLink = () => {
+  const m = S.ui.modals[S.ui.modals.length - 1];
+  if (!m || m.type !== 'projectLink') return;
+  const p = proj(m.pid);
+  if (!p) {
+    closeModal();
+    return;
+  }
+  const labelInput = $('#pl-label');
+  const urlInput = $('#pl-url');
+  const typeInput = $('#pl-type');
+
+  const label = (labelInput?.value || '').trim();
+  let url = (urlInput?.value || '').trim();
+  const type = typeInput?.value || 'other';
+
+  if (!url || !label) {
+    toast('Label and URL are required');
+    return;
+  }
+  if (!/^https?:\/\//i.test(url)) {
+    url = 'https://' + url;
+  }
+
+  p.links = p.links || [];
+  p.links.push({
+    id: uid('l'),
+    type,
+    label,
+    url,
+  });
+  save();
+  closeModal();
+  toast('Link added');
+  render();
+};
+A.removeProjectLink = el => {
+  const pid = el.dataset.pid;
+  const lid = el.dataset.lid;
+  const p = proj(pid);
+  if (!p || !p.links) return;
+  p.links = p.links.filter(l => l.id !== lid);
+  save();
+  toast('Link removed');
+  render();
 };
 IN.pform = el => {
   S.ui.pform[el.dataset.f] = el.value;
@@ -1269,6 +1449,7 @@ export function createProject(f, tmplId) {
     start: dOff(0),
     fav: false,
     members: [...new Set([D().me, f.lead])],
+    links: f.links || [],
     desc: f.desc || 'No description yet.',
     milestones: [],
     last: 0,
@@ -1296,11 +1477,25 @@ A.submitProject = () => {
   f.name = ($('#p-name')?.value || '').trim();
   f.desc = $('#p-desc')?.value || '';
   if (!f.name) {
-    S.ui.errors.pname = 'Give the project a name';
+    S.ui.errors.pname = 'Beri nama untuk proyek / lomba';
     render();
     $('#p-name')?.focus();
     return;
   }
+
+  const gbUrl = ($('#p-link-guidebook')?.value || '').trim();
+  const subUrl = ($('#p-link-submission')?.value || '').trim();
+  const grpUrl = ($('#p-link-group')?.value || '').trim();
+  const socUrl = ($('#p-link-social')?.value || '').trim();
+
+  const collectedLinks = [];
+  if (gbUrl) collectedLinks.push({ id: uid('l'), type: 'guidebook', label: 'Juknis Lomba (PDF)', url: gbUrl.startsWith('http') ? gbUrl : 'https://' + gbUrl });
+  if (subUrl) collectedLinks.push({ id: uid('l'), type: 'submission', label: 'Form Pengumpulan', url: subUrl.startsWith('http') ? subUrl : 'https://' + subUrl });
+  if (grpUrl) collectedLinks.push({ id: uid('l'), type: 'group', label: 'Grup Koordinasi (WA/Discord)', url: grpUrl.startsWith('http') ? grpUrl : 'https://' + grpUrl });
+  if (socUrl) collectedLinks.push({ id: uid('l'), type: 'social', label: 'Instagram / Info Lomba', url: socUrl.startsWith('http') ? socUrl : 'https://' + socUrl });
+
+  f.links = collectedLinks;
+
   if (m.edit) {
     const p = proj(m.edit);
     if (
@@ -1314,12 +1509,13 @@ A.submitProject = () => {
           lead: f.lead,
           due: f.due,
           members: [...new Set([...p.members, f.lead])],
+          links: collectedLinks.length ? collectedLinks : p.links || [],
         }),
       )
     ) {
       S.ui.modals.pop();
       render();
-      toast('Project updated');
+      toast('Proyek / Lomba diperbarui');
     }
     return;
   }
@@ -1331,8 +1527,8 @@ A.submitProject = () => {
   )
     return;
   S.ui.modals.pop();
-  go('project', { id: p.id, tab: f.tmpl === 'blank' ? 'overview' : S.prefs.defaultTab || 'board' });
-  toast(`Created ${p.name}${tasksOf(p.id).length ? ` with ${tasksOf(p.id).length} starter tasks` : ''}`);
+  go('project', { id: p.id, tab: 'overview' });
+  toast(`Berhasil membuat ${p.name}`);
 };
 A.dupProject = el => {
   const p = proj(el.dataset.id);
@@ -1396,6 +1592,7 @@ A.delProject = el => {
           D().projects = D().projects.filter(x => x !== p);
           D().projOrder = D().projOrder.filter(x => x !== p.id);
           D().files = D().files.filter(f => f.project !== p.id);
+          deleteProjectFromCloud(p.id);
         })
       ) {
         if (S.ui.route === 'project' && S.ui.params.id === p.id) go('projects');
@@ -1742,7 +1939,7 @@ A.switchWs = el => {
   S.ui.pop = null;
   D().ws = { name: w.name, url: w.name.toLowerCase().replace(/[^a-z0-9]+/g, ''), c: w.c, brand: !!w.brand };
   save();
-  go('home');
+  go(S.prefs.home || 'calendar');
   toast(`Switched to ${w.name}`);
 };
 A.newWorkspace = () => {
@@ -1753,14 +1950,17 @@ A.newWorkspace = () => {
   S.ui.onbData.url = '';
   render();
 };
-A.signOut = () => {
+A.signOut = async () => {
   S.ui.pop = null;
   S.ui.palette = null;
   S.ui.drawer = null;
   S.ui.modals = [];
+  await signOut();
+  clearUserSession();
   S.ui.auth = 'login';
   S.ui.errors = {};
   render();
+  toast('Berhasil keluar');
 };
 A.shortcuts = () => {
   S.ui.pop = null;
@@ -1790,19 +1990,16 @@ A.retryOnline = el => {
 A.resetDemo = () => {
   S.ui.pop = null;
   confirmDlg({
-    title: 'Reset demo data?',
-    body: 'All projects, tasks, and settings in this browser go back to the original sample workspace.',
-    ok: 'Reset data',
+    title: 'Reset akun lokal?',
+    body: 'Semua cache lokal di browser ini akan dibersihkan.',
+    ok: 'Reset',
     danger: true,
     icon: 'rotate-ccw',
     run: () => {
-      S.data = seed();
-      S.views = {};
-      S.prefs = { ...DEFAULT_PREFS, theme: S.prefs.theme };
-      S.ui.drawer = null;
-      save();
-      go('home');
-      toast('Demo data restored');
+      clearUserSession();
+      S.ui.auth = 'login';
+      render();
+      toast('Cache lokal berhasil dibersihkan');
     },
   });
 };
@@ -1920,12 +2117,10 @@ A.delWorkspace = () =>
     danger: true,
     typeName: D().ws.name,
     run: () => {
-      S.data = seed();
-      S.views = {};
-      save();
+      clearUserSession();
       S.ui.auth = 'login';
       render();
-      toast('Workspace deleted. Demo data was restored for this prototype.', { kind: 'info', ms: 5000 });
+      toast('Workspace berhasil dihapus');
     },
   });
 A.avColor = el => {
@@ -1933,26 +2128,35 @@ A.avColor = el => {
   save();
   render();
 };
-A.saveProfile = () => {
+A.saveProfile = async () => {
   const n = $('#pf-name').value.trim();
   if (!n) {
-    S.ui.errors.pname2 = 'Enter your name';
+    S.ui.errors.pname2 = 'Masukkan nama lengkap Anda';
     render();
     return;
   }
   S.ui.errors.pname2 = null;
   const tt = $('#pf-title').value.trim();
-  loadingBtn('pf-save', 600, () => {
-    if (
-      mutate(() => {
-        S.prefs.name = n;
-        S.prefs.title = tt;
-        me().name = n;
-        me().title = tt;
-      })
-    )
-      toast('Profile updated');
+
+  const btn = $('#pf-save');
+  btn?.classList.add('is-loading');
+  const { error } = await updateProfile({ name: n, title: tt });
+  btn?.classList.remove('is-loading');
+
+  if (error) {
+    toast(error.message, { kind: 'err' });
+    return;
+  }
+
+  mutate(() => {
+    S.prefs.name = n;
+    S.prefs.title = tt;
+    if (me()) {
+      me().name = n;
+      me().title = tt;
+    }
   });
+  toast('Profil berhasil diperbarui');
 };
 IN.pwStrength = el => {
   S.ui.pwNew = el.value;
@@ -1962,25 +2166,35 @@ IN.pwStrength = el => {
   if (m) m.replaceWith(tmp.firstElementChild || document.createTextNode(''));
   else if (tmp.firstElementChild) el.after(tmp.firstElementChild);
 };
-A.savePassword = () => {
+A.savePassword = async () => {
   const e = (S.ui.errors = {});
-  const cur = $('#pw-cur').value,
-    nw = $('#pw-new').value,
-    cf = $('#pw-conf').value;
+  const cur = $('#pw-cur')?.value || '',
+    nw = $('#pw-new')?.value || '',
+    cf = $('#pw-conf')?.value || '';
   S.ui.pwDone = false;
-  if (!cur) e.pwCur = 'Enter your current password';
-  if (nw.length < 10 || !/[0-9\W]/.test(nw)) e.pwNew = 'Use at least 10 characters, including a number or symbol';
-  if (nw !== cf) e.pwConf = "Passwords don't match";
+  if (!cur) e.pwCur = 'Masukkan password saat ini';
+  if (nw.length < 10 || !/[0-9\W]/.test(nw)) e.pwNew = 'Minimal 10 karakter dengan kombinasi angka atau simbol';
+  if (nw !== cf) e.pwConf = 'Password konfirmasi tidak cocok';
   if (Object.keys(e).length) {
     render();
     return;
   }
-  loadingBtn('pw-save', 800, () => {
-    S.ui.pwDone = true;
-    S.ui.pwNew = '';
+
+  const btn = $('#pw-save');
+  btn?.classList.add('is-loading');
+  const { error } = await updatePassword(nw);
+  btn?.classList.remove('is-loading');
+
+  if (error) {
+    e.pwNew = error.message;
     render();
-    toast('Password updated');
-  });
+    return;
+  }
+
+  S.ui.pwDone = true;
+  S.ui.pwNew = '';
+  render();
+  toast('Password berhasil diperbarui');
 };
 A.revokeSession = el => {
   mutate(() => {
@@ -2078,49 +2292,98 @@ export const EMAIL_RE = /^\S+@\S+\.\S+$/;
 export function enterApp(msg) {
   S.ui.auth = null;
   S.ui.errors = {};
-  go(S.prefs.home || 'home');
+  go(S.prefs.home || 'calendar');
   toast(msg);
 }
-A.doLogin = () => {
+A.doLogin = async () => {
   const e = (S.ui.errors = {});
-  const em = $('#l-email').value.trim(),
-    pw = $('#l-pw').value;
+  const em = ($('#l-email')?.value || '').trim(),
+    pw = $('#l-pw')?.value || '';
   S.ui.af.email = em;
-  if (!em) e.email = 'Enter your email address';
-  else if (!EMAIL_RE.test(em)) e.email = 'Enter a valid email, like name@company.com';
-  if (!pw) e.pw = 'Enter your password';
+  if (!em) e.email = 'Masukkan alamat email Anda';
+  else if (!EMAIL_RE.test(em)) e.email = 'Masukkan email yang valid';
+  if (!pw) e.pw = 'Masukkan kata sandi Anda';
   if (Object.keys(e).length) {
     render();
     (e.email ? $('#l-email') : $('#l-pw'))?.focus();
-    if (!e.email) $('#l-pw').value = pw;
+    if (!e.email && $('#l-pw')) $('#l-pw').value = pw;
     return;
   }
-  loadingBtn('login-btn', 750, () => enterApp(`Signed in as ${em}`));
+
+  const btn = $('#login-btn');
+  btn?.classList.add('is-loading');
+  btn?.setAttribute('disabled', 'true');
+  const { data, error } = await signIn({ email: em, password: pw });
+  btn?.classList.remove('is-loading');
+  btn?.removeAttribute('disabled');
+
+  if (error) {
+    e.login = error.message === 'Invalid login credentials' ? 'Email atau kata sandi salah' : error.message;
+    render();
+    const pwInput = $('#l-pw');
+    if (pwInput) pwInput.value = pw;
+    return;
+  }
+
+  if (data?.user) {
+    const cloudData = await fetchAllUserData(data.user.id);
+    applyUserSession(data.user, cloudData);
+  }
+  enterApp(`Berhasil masuk sebagai ${em}`);
 };
-A.socialAuth = el => {
+A.socialAuth = async el => {
+  const provider = el.dataset.v; // Google, Microsoft, Apple
   el.classList.add('is-loading');
-  setTimeout(() => enterApp(`Signed in with ${el.dataset.v}`), 800);
+  const { error } = await signInWithOAuth(provider);
+  el.classList.remove('is-loading');
+  if (error) {
+    const isUnsup = error.message?.toLowerCase().includes('not enabled') || error.message?.toLowerCase().includes('unsupported provider');
+    const msg = isUnsup
+      ? `Provider ${provider} belum diaktifkan di Supabase Dashboard. Silakan gunakan form Email & Password di atas.`
+      : error.message;
+    toast(msg, { kind: 'err', ms: 6000 });
+  }
 };
-A.doSignup = () => {
+A.doSignup = async () => {
   const e = (S.ui.errors = {});
-  const nm = $('#s-name').value.trim(),
-    em = $('#s-email').value.trim(),
-    pw = $('#s-pw').value;
+  const nm = ($('#s-name')?.value || '').trim(),
+    em = ($('#s-email')?.value || '').trim(),
+    pw = $('#s-pw')?.value || '';
   S.ui.af.name = nm;
   S.ui.af.email = em;
-  if (!nm) e.name = 'Enter your name';
-  if (!EMAIL_RE.test(em)) e.email = 'Enter a valid work email';
-  if (pw.length < 10 || !/[0-9\W]/.test(pw)) e.pw = 'Use at least 10 characters, including a number or symbol';
+  if (!nm) e.name = 'Masukkan nama lengkap Anda';
+  if (!EMAIL_RE.test(em)) e.email = 'Masukkan email yang valid';
+  if (pw.length < 10 || !/[0-9\W]/.test(pw)) e.pw = 'Gunakan minimal 10 karakter dengan kombinasi angka atau simbol';
   if (Object.keys(e).length) {
     render();
-    $('#s-email').value = em;
+    if ($('#s-email')) $('#s-email').value = em;
     return;
   }
-  loadingBtn('signup-btn', 800, () => {
-    S.ui.auth = 'verify';
-    startResend();
+
+  const btn = $('#signup-btn');
+  btn?.classList.add('is-loading');
+  btn?.setAttribute('disabled', 'true');
+  const { data, error } = await signUp({ email: em, password: pw, name: nm });
+  btn?.classList.remove('is-loading');
+  btn?.removeAttribute('disabled');
+
+  if (error) {
+    e.email = error.message;
     render();
-  });
+    return;
+  }
+
+  // Jika akun langsung terkonfirmasi
+  if (data?.session && data?.user) {
+    applyUserSession(data.user, null);
+    enterApp(`Selamat datang, ${nm || em}!`);
+    return;
+  }
+
+  // Jika membutuhkan verifikasi email
+  S.ui.auth = 'verify';
+  startResend();
+  render();
 };
 export function startResend() {
   S.ui.resendT = 30;
@@ -2135,49 +2398,81 @@ export function startResend() {
     }
   }, 1000);
 }
-A.resend = el => {
+A.resend = async el => {
   if (el.dataset.v === 'verify') {
     startResend();
     render();
-    toast(`Verification email sent to ${S.ui.af.email}`);
-  } else toast(`Reset link sent to ${S.ui.af.email}`);
+    const { error } = await resendVerification(S.ui.af.email);
+    if (error) {
+      toast(error.message, { kind: 'err' });
+    } else {
+      toast(`Email verifikasi dikirim ulang ke ${S.ui.af.email}`);
+    }
+  } else {
+    const { error } = await resetPassword(S.ui.af.email);
+    if (error) {
+      toast(error.message, { kind: 'err' });
+    } else {
+      toast(`Tautan reset dikirim ke ${S.ui.af.email}`);
+    }
+  }
 };
-A.verified = () => {
-  S.ui.auth = 'onboarding';
-  S.ui.onb = 0;
-  S.ui.onbData.ws = '';
-  S.ui.onbData.url = '';
-  render();
+A.verified = async () => {
+  const session = await getSession();
+  if (session?.user) {
+    const cloudData = await fetchAllUserData(session.user.id);
+    applyUserSession(session.user, cloudData);
+    enterApp(`Selamat datang, ${S.prefs.name || session.user.email}!`);
+  } else {
+    toast('Email belum diverifikasi. Silakan buka email Anda dan klik link konfirmasi.', { kind: 'info' });
+  }
 };
-A.doForgot = () => {
-  const em = $('#f-email').value.trim();
+A.doForgot = async () => {
+  const em = ($('#f-email')?.value || '').trim();
   S.ui.af.email = em;
   S.ui.errors = {};
   if (!EMAIL_RE.test(em)) {
-    S.ui.errors.email = 'Enter the email you use to sign in';
+    S.ui.errors.email = 'Masukkan alamat email yang valid';
     render();
     return;
   }
-  loadingBtn('forgot-btn', 700, () => {
-    S.ui.auth = 'forgot-sent';
+  const btn = $('#forgot-btn');
+  btn?.classList.add('is-loading');
+  const { error } = await resetPassword(em);
+  btn?.classList.remove('is-loading');
+
+  if (error) {
+    S.ui.errors.email = error.message;
     render();
-  });
+    return;
+  }
+  S.ui.auth = 'forgot-sent';
+  render();
 };
-A.doReset = () => {
-  const a = $('#r-pw').value,
-    b = $('#r-pw2').value;
+A.doReset = async () => {
+  const a = $('#r-pw')?.value || '',
+    b = $('#r-pw2')?.value || '';
   const e = (S.ui.errors = {});
-  if (a.length < 10 || !/[0-9\W]/.test(a)) e.pw = 'Use at least 10 characters, including a number or symbol';
-  if (a !== b) e.pw2 = "Passwords don't match";
+  if (a.length < 10 || !/[0-9\W]/.test(a)) e.pw = 'Gunakan minimal 10 karakter dengan kombinasi angka atau simbol';
+  if (a !== b) e.pw2 = 'Password konfirmasi tidak cocok';
   if (Object.keys(e).length) {
     render();
     return;
   }
-  loadingBtn('reset-btn', 700, () => {
-    S.ui.auth = 'reset-done';
-    S.ui.pwNew = '';
+
+  const btn = $('#reset-btn');
+  btn?.classList.add('is-loading');
+  const { error } = await updatePassword(a);
+  btn?.classList.remove('is-loading');
+
+  if (error) {
+    e.pw = error.message;
     render();
-  });
+    return;
+  }
+  S.ui.auth = 'reset-done';
+  S.ui.pwNew = '';
+  render();
 };
 
 /* onboarding */
@@ -2290,4 +2585,181 @@ A.onbFinish = () => {
   S.ui.auth = null;
   go('project', { id: p.id, tab: S.prefs.defaultTab });
   toast(`Welcome to ${D().ws.name}`);
+};
+
+/* ---------- QUICK NOTES CRUD ---------- */
+A.expandNoteComposer = () => {
+  if (!S.ui.noteDraft) S.ui.noteDraft = { active: true, title: '', content: '', color: 'default', pinned: false };
+  else S.ui.noteDraft.active = true;
+  render();
+  setTimeout(() => {
+    const el = $('#note-draft-content') || $('#note-draft-title');
+    el?.focus();
+  }, 20);
+};
+
+A.closeNoteComposer = () => {
+  if (S.ui.noteDraft) {
+    S.ui.noteDraft.active = false;
+    S.ui.noteDraft.title = '';
+    S.ui.noteDraft.content = '';
+  }
+  render();
+};
+
+A.setNewNoteColor = el => {
+  if (!S.ui.noteDraft) S.ui.noteDraft = { active: true, title: '', content: '', color: 'default', pinned: false };
+  S.ui.noteDraft.color = el.dataset.c;
+  render();
+};
+
+A.toggleNewNotePin = () => {
+  if (!S.ui.noteDraft) S.ui.noteDraft = { active: true, title: '', content: '', color: 'default', pinned: false };
+  S.ui.noteDraft.pinned = !S.ui.noteDraft.pinned;
+  render();
+};
+
+A.saveNewNote = () => {
+  const draft = S.ui.noteDraft || {};
+  const title = ($('#note-draft-title')?.value ?? draft.title ?? '').trim();
+  const content = ($('#note-draft-content')?.value ?? draft.content ?? '').trim();
+
+  if (!title && !content) {
+    toast('Catatan tidak boleh kosong', { kind: 'err' });
+    return;
+  }
+
+  const newNote = {
+    id: uid('n'),
+    title,
+    content,
+    color: draft.color || 'default',
+    pinned: !!draft.pinned,
+    updatedAt: new Date().toISOString(),
+  };
+
+  mutate(() => {
+    allNotes().unshift(newNote);
+  });
+
+  S.ui.noteDraft = { active: false, title: '', content: '', color: 'default', pinned: false };
+  render();
+  toast('Catatan baru disimpan');
+};
+
+A.openEditNote = (el, e) => {
+  // Ignore if user clicked on an internal button (e.g. pin or palette or delete)
+  if (e?.target?.closest('button:not([data-a="openEditNote"])')) return;
+  const n = note(el.dataset.id);
+  if (!n) return;
+  openModal({ type: 'note', id: n.id });
+};
+
+A.saveEditNote = el => {
+  const modal = S.ui.modals[S.ui.modals.length - 1];
+  const id = el.dataset.id || modal?.id;
+  const n = note(id);
+  if (!n) return;
+
+  const title = ($('#note-edit-title')?.value ?? n.title).trim();
+  const content = ($('#note-edit-content')?.value ?? n.content).trim();
+
+  if (!title && !content) {
+    toast('Catatan tidak boleh kosong', { kind: 'err' });
+    return;
+  }
+
+  mutate(() => {
+    n.title = title;
+    n.content = content;
+    n.updatedAt = new Date().toISOString();
+  });
+
+  closeModal();
+  toast('Catatan diperbarui');
+};
+
+A.togglePinNote = el => {
+  const n = note(el.dataset.id);
+  if (!n) return;
+  mutate(() => {
+    n.pinned = !n.pinned;
+    n.updatedAt = new Date().toISOString();
+  });
+  toast(n.pinned ? 'Catatan disematkan' : 'Sematkan catatan dilepas');
+};
+
+A.setNoteColor = el => {
+  const n = note(el.dataset.id);
+  if (!n) return;
+  mutate(() => {
+    n.color = el.dataset.c;
+    n.updatedAt = new Date().toISOString();
+  });
+  S.ui.pop = null;
+  render();
+};
+
+A.deleteNote = el => {
+  const n = note(el.dataset.id);
+  if (!n) return;
+  const notes = allNotes();
+  const idx = notes.findIndex(x => x.id === n.id);
+  if (idx === -1) return;
+
+  if (S.ui.modals.length && S.ui.modals[S.ui.modals.length - 1]?.type === 'note') {
+    closeModal();
+  }
+  S.ui.pop = null;
+  const removed = notes[idx];
+
+  mutate(() => {
+    notes.splice(idx, 1);
+    deleteNoteFromCloud(removed.id);
+  });
+
+  toast('Catatan dihapus', {
+    action: 'Urungkan',
+    onAction: () => {
+      mutate(() => {
+        notes.splice(idx, 0, removed);
+      });
+    },
+  });
+};
+
+/* Notes input bindings */
+IN.noteDraftTitle = el => {
+  if (!S.ui.noteDraft) S.ui.noteDraft = { active: true, title: '', content: '', color: 'default', pinned: false };
+  S.ui.noteDraft.title = el.value;
+};
+
+IN.noteDraftContent = el => {
+  if (!S.ui.noteDraft) S.ui.noteDraft = { active: true, title: '', content: '', color: 'default', pinned: false };
+  S.ui.noteDraft.content = el.value;
+};
+
+IN.noteEditTitle = el => {
+  const modal = S.ui.modals[S.ui.modals.length - 1];
+  const n = note(modal?.id);
+  if (n) {
+    n.title = el.value;
+    n.updatedAt = new Date().toISOString();
+    save();
+  }
+};
+
+IN.noteEditContent = el => {
+  const modal = S.ui.modals[S.ui.modals.length - 1];
+  const n = note(modal?.id);
+  if (n) {
+    n.content = el.value;
+    n.updatedAt = new Date().toISOString();
+    save();
+  }
+};
+
+IN.noteSearch = el => {
+  S.ui.noteSearch = el.value;
+  render();
 };

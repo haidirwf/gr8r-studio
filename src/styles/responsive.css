@@ -50,6 +50,11 @@
   .page {
     padding: 20px var(--gutter) 96px;
   }
+  .page.flush {
+    padding: 0 0 calc(84px + env(safe-area-inset-bottom, 0px));
+    height: auto;
+    min-height: 100%;
+  }
   .stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -96,6 +101,9 @@
 @media (max-width: 640px) {
   :root {
     --topbar-h: 50px;
+  }
+  .content {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   }
   .bottomnav {
     display: flex;
@@ -197,10 +205,30 @@
   .modal-wrap {
     padding: 0;
     align-items: flex-end;
+    overflow-x: hidden;
+    width: 100%;
+    touch-action: pan-y;
   }
   .modal {
-    max-height: 92vh;
-    border-radius: 14px 14px 0 0;
+    width: 100% !important;
+    max-width: 100vw !important;
+    max-height: 90vh;
+    border-radius: 16px 16px 0 0;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    margin: 0 !important;
+    touch-action: pan-y;
+  }
+  .modal-b {
+    overflow-x: hidden;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    padding: 14px 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .modal-f {
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   }
   .opts,
   .tmpls {
@@ -217,27 +245,6 @@
   }
   .frow .conj {
     display: none;
-  }
-  .cal-g {
-    grid-auto-rows: minmax(72px, 1fr);
-  }
-  .cev .trunc,
-  .cev .av {
-    display: none;
-  }
-  .cev {
-    height: 8px;
-    padding: 0;
-    border-radius: 3px;
-    background: var(--c);
-  }
-  .week {
-    grid-template-columns: minmax(0, 1fr);
-    overflow-y: auto;
-  }
-  .wcol {
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
   }
   .tl-left {
     display: none;

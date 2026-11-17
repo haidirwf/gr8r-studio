@@ -298,7 +298,8 @@ export function settingsBody(sec, title) {
           sel(
             'home',
             [
-              ['home', 'Home'],
+              ['calendar', 'Calendar'],
+              ['home', 'Dashboard'],
               ['mytasks', 'My Tasks'],
               ['inbox', 'Inbox'],
             ],
@@ -339,10 +340,13 @@ export function settingsBody(sec, title) {
       <div><button class="btn btn-primary" data-a="savePassword" id="pw-save">Update password</button></div></form>`
       );
     }
-    case 'sessions':
+    case 'sessions': {
+      const activeSessions = d.sessions && d.sessions.length ? d.sessions : [
+        { id: 'cur', dev: 'Perangkat Ini (Browser)', loc: 'Online', at: 'Sesi aktif saat ini', cur: true },
+      ];
       return (
         H('Devices currently signed in to your account.') +
-        d.sessions
+        activeSessions
           .map(s =>
             srow(
               `<span class="row" style="gap:8px">${ic(s.dev.includes('iPhone') ? 'smartphone' : 'monitor', 15)}${esc(s.dev)}${s.cur ? '<span class="badge green">This device</span>' : ''}</span>`,
@@ -351,8 +355,9 @@ export function settingsBody(sec, title) {
             ),
           )
           .join('') +
-        `<div style="margin-top:16px"><button class="btn btn-danger-ghost" data-a="revokeAll" ${d.sessions.length > 1 ? '' : 'disabled'}>Sign out of all other sessions</button></div>`
+        `<div style="margin-top:16px"><button class="btn btn-danger-ghost" data-a="revokeAll" ${activeSessions.length > 1 ? '' : 'disabled'}>Sign out of all other sessions</button></div>`
       );
+    }
     case '2fa':
       return (
         H('Add a second step when signing in.') +
@@ -405,7 +410,7 @@ export function settingsBody(sec, title) {
           'Expires 08/2028 · Default',
           `<button class="btn btn-secondary btn-sm" data-a="toastInfo" data-msg="Card updates open in a secure payment window">Update</button>`,
         ) +
-        srow('Billing email', 'Invoices and receipts are sent here.', `<span class="muted" style="user-select:all">hello@gr8rstudio.com</span>`) +
+        srow('Billing email', 'Invoices and receipts are sent here.', `<span class="muted" style="user-select:all">${esc(me().email || 'billing@email.com')}</span>`) +
         srow(
           'Billing address',
           '2150 Mission St, San Francisco, CA 94110',

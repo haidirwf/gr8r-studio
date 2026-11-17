@@ -49,5 +49,8 @@ function lucideSubset() {
 
 export default defineConfig({
   plugins: [lucideSubset()],
-  server: { port: 5173 },
+  server: {
+    host: '0.0.0.0',
+    port: 8080,
+  },
 });

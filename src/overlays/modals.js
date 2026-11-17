@@ -3,9 +3,10 @@ import { $$, MOD, ago, esc, fmtDate } from '../core/utils.js';
 import { ic } from '../core/icons.js';
 import { PCOLORS, PICONS } from '../core/constants.js';
 import { D, S, mem, pColor, proj, task, teamsList } from '../core/store.js';
-import { FT, av, filePrev, lbl, prPill, stPill } from '../ui/helpers.js';
+import { FT, av, filePrev, lbl, linkIcon, prPill, stPill } from '../ui/helpers.js';
 import { focusKey, render } from '../shell/render.js';
 import { teamModal } from '../features/teams.js';
+import { noteModal } from '../pages/notes.js';
 
 export function openModal(m) {
   S.ui.modalOpeners = S.ui.modalOpeners || [];
@@ -25,11 +26,79 @@ export function closeModal() {
   S.ui.pop = null;
   render();
 }
+export function placeAnchoredModals() {
+  if (typeof window === 'undefined') return;
+  const el = document.querySelector('.modal.quick-task-popover');
+  if (!el) return;
+
+  if (window.innerWidth <= 768) {
+    el.style.position = '';
+    el.style.left = '';
+    el.style.top = '';
+    el.style.width = '';
+    el.style.margin = '';
+    return;
+  }
+
+  const modals = S.ui.modals;
+  if (!modals || !modals.length) return;
+  const m = modals[modals.length - 1];
+  if (!m || !m.anchor || m.type !== 'quickTask') return;
+
+  const a = m.anchor;
+  const pad = 12;
+  const popW = Math.min(el.offsetWidth || 390, window.innerWidth - pad * 2);
+  const popH = el.offsetHeight || 260;
+
+  let left = a.left;
+  if (left + popW > window.innerWidth - pad) {
+    const rEdge = a.cellRight != null ? a.cellRight : a.right;
+    left = rEdge - popW;
+  }
+  if (left < pad) left = pad;
+  if (left + popW > window.innerWidth - pad) left = window.innerWidth - pad - popW;
+
+  let top = a.bottom + 6;
+  if (top + popH > window.innerHeight - pad) {
+    if (a.top - 6 - popH >= pad) {
+      top = a.top - 6 - popH;
+    } else {
+      top = Math.max(pad, window.innerHeight - pad - popH);
+    }
+  }
+
+  el.style.position = 'fixed';
+  el.style.left = `${Math.round(left)}px`;
+  el.style.top = `${Math.round(top)}px`;
+  el.style.margin = '0';
+  el.style.width = `${popW}px`;
+}
 export function modalHtml(m) {
   const H = (title, sub = '') =>
     `<div class="modal-h"><div><h2 id="mt-${m.type}">${title}</h2>${sub ? `<div class="muted" style="font-size:12.5px;margin-top:2px">${sub}</div>` : ''}</div><button class="ibtn ibtn-sm" data-a="closeModal" aria-label="Close">${ic('x', 16)}</button></div>`;
-  const wrap = (cls, inner) => `<div class="modal ${cls}" role="dialog" aria-modal="true" aria-labelledby="mt-${m.type}">${inner}</div>`;
+  const wrap = (cls, inner, extraAttr = '') => `<div class="modal ${cls}" role="dialog" aria-modal="true" aria-labelledby="mt-${m.type}" ${extraAttr}>${inner}</div>`;
   switch (m.type) {
+    case 'quickTask': {
+      let initStyle = '';
+      if (m.anchor && typeof window !== 'undefined' && window.innerWidth > 768) {
+        const pad = 12;
+        const popW = Math.min(390, window.innerWidth - pad * 2);
+        let left = m.anchor.left;
+        if (left + popW > window.innerWidth - pad) {
+          const rEdge = m.anchor.cellRight != null ? m.anchor.cellRight : m.anchor.right;
+          left = rEdge - popW;
+        }
+        if (left < pad) left = pad;
+        if (left + popW > window.innerWidth - pad) left = window.innerWidth - pad - popW;
+
+        let top = m.anchor.bottom + 6;
+        if (top + 280 > window.innerHeight - pad && m.anchor.top - 6 - 280 >= pad) {
+          top = m.anchor.top - 6 - 280;
+        }
+        initStyle = `style="position:fixed;left:${Math.round(left)}px;top:${Math.round(top)}px;width:${popW}px;margin:0;"`;
+      }
+      return wrap(`sm${m.anchor ? ' quick-task-popover' : ''}`, quickTaskModal(m, H), initStyle);
+    }
     case 'task':
       return wrap('', taskModal(m, H));
     case 'project':
@@ -49,6 +118,13 @@ export function modalHtml(m) {
       return wrap('lg', shortcutsModal(H));
     case 'team':
       return wrap('', teamModal(m, H));
+    case 'projectLink':
+      return wrap(
+        'sm',
+        `${H('Add Resource / Link', 'Tambahkan tautan panduan lomba, formulir submit, atau grup koordinasi.')}<form class="modal-b" data-submit="submitProjectLink" style="gap:12px"><div class="field"><label class="label" for="pl-label">Nama Link</label><input class="input" id="pl-label" placeholder="Contoh: Juknis Lomba (PDF), Form Submit, Grup WA" autofocus required></div><div class="field"><label class="label" for="pl-url">URL</label><input class="input" id="pl-url" type="url" placeholder="https://..." required></div><div class="field"><label class="label" for="pl-type">Tipe Link</label><select class="select" id="pl-type"><option value="guidebook">Guidebook / Juknis</option><option value="submission">Submission / Form</option><option value="group">Grup Koordinasi (WA/Discord/Telegram)</option><option value="social">Media Sosial / Website</option><option value="other">Lainnya</option></select></div></form><div class="modal-f"><span class="sp"></span><button class="btn btn-secondary" data-a="closeModal">Cancel</button><button class="btn btn-primary" data-a="submitProjectLink">Add link</button></div>`,
+      );
+    case 'note':
+      return wrap('', noteModal(m, H));
     case 'filePreview':
       return wrap('lg', filePreviewModal(m, H));
     case 'saveView':
@@ -136,40 +212,77 @@ export const TEMPLATES = [
     tasks: ['Brain dump ideas', 'Pick top 3 priorities', 'Schedule focus time', 'Weekly review'],
   },
 ];
+export function quickTaskModal(m, H) {
+  const t = task(m.id);
+  if (!t) return `${H('Tugas')}<div class="modal-b" style="padding:16px 20px"><div class="cal-agenda-empty">Tugas tidak ditemukan.</div></div>`;
+  const p = proj(t.project);
+  const isDone = t.status === 'done';
+  return `${H(p ? esc(p.name) : 'Detail Tugas', t.key ? `<span class="mono">${esc(t.key)}</span>` : '')}
+  <div class="modal-b" style="gap:14px;padding:16px 20px">
+    <div style="font-size:17px;font-weight:700;color:var(--text);line-height:1.4">${esc(t.title)}</div>
+    
+    <div class="row" style="gap:8px;flex-wrap:wrap">
+      <button class="pillbtn ${isDone ? 'green' : ''}" data-a="toggleDone" data-id="${t.id}">
+        ${isDone ? ic('check', 14) + ' <span>Selesai</span>' : ic('circle', 14) + ' <span>Belum Selesai</span>'}
+      </button>
+      ${t.due ? `<span class="pillbtn num">${ic('calendar', 13)}<span>Deadline: ${fmtDate(t.due, true)}</span></span>` : ''}
+      ${prPill(t.priority)}
+    </div>
+
+    ${t.desc ? `<div class="faint" style="font-size:13px;line-height:1.5;background:var(--sunken);padding:10px 12px;border-radius:6px">${esc(t.desc.replace(/<[^>]+>/g, ''))}</div>` : ''}
+
+    ${p && p.links && p.links.length ? `
+      <div style="display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--divider);padding-top:10px">
+        <span style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em">Link Lomba Terkait</span>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${p.links.map(l => `<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" class="pillbtn bordered" style="text-decoration:none">${linkIcon(l.type, 13)}<span>${esc(l.label)}</span>${ic('arrow-up-right', 11)}</a>`).join('')}
+        </div>
+      </div>
+    ` : ''}
+  </div>
+  <div class="modal-f" style="justify-content:space-between">
+    <button class="btn btn-ghost btn-sm text-danger" data-a="deleteQuickTask" data-id="${t.id}">${ic('trash-2', 14)} Hapus</button>
+    <div class="row" style="gap:8px">
+      <button class="btn btn-secondary btn-sm" data-a="closeModal">Tutup</button>
+      ${p ? `<button class="btn btn-primary btn-sm" data-a="goProjectFromTask" data-id="${p.id}"><span>Lihat Proyek</span>${ic('arrow-right', 14)}</button>` : ''}
+    </div>
+  </div>`;
+}
+
 export function projectModal(m, H) {
   const f = S.ui.pform;
   const err = S.ui.errors.pname;
-  return `${H(m.edit ? 'Project settings' : 'New project', m.edit ? '' : 'Projects hold tasks, files, and conversations for one body of work.')}
-  <form class="modal-b" data-submit="submitProject">
-    <div class="row" style="gap:10px;align-items:flex-start">
+  return `${H(m.edit ? 'Pengaturan Proyek / Lomba' : 'Tambah Proyek / Lomba Baru', m.edit ? '' : 'Buat pelacak lomba atau modul tugas SKL.')}
+  <form class="modal-b" data-submit="submitProject" style="gap:14px;overflow-x:hidden;max-width:100%;box-sizing:border-box">
+    <div class="row" style="gap:10px;align-items:flex-start;min-width:0">
       <button type="button" class="picon lg" style="--c:${PCOLORS[f.color]};cursor:default;flex-shrink:0;margin-top:22px" aria-hidden="true" tabindex="-1">${ic(f.icon, 18)}</button>
-      <div class="field grow"><label class="label" for="p-name">Project name</label><input class="input ${err ? 'is-error' : ''}" id="p-name" data-in="pform" data-f="name" value="${esc(f.name)}" placeholder="e.g. Website Redesign" autofocus aria-invalid="${!!err}">${err ? `<span class="err">${ic('circle-alert', 12)}${err}</span>` : ''}</div>
+      <div class="field grow" style="min-width:0"><label class="label" for="p-name">Nama Lomba / Proyek</label><input class="input ${err ? 'is-error' : ''}" id="p-name" data-in="pform" data-f="name" value="${esc(f.name)}" placeholder="Contoh: Lomba Web Design 2026" autofocus aria-invalid="${!!err}">${err ? `<span class="err">${ic('circle-alert', 12)}${err}</span>` : ''}</div>
     </div>
-    <div class="field"><label class="label" for="p-desc">Description</label><textarea class="textarea" id="p-desc" data-in="pform" data-f="desc" rows="2" placeholder="What is this project about?">${esc(f.desc)}</textarea></div>
-    <div class="row" style="gap:16px;align-items:flex-start;flex-wrap:wrap">
-      <div class="field" style="flex:1;min-width:220px"><span class="label">Icon</span><div class="iconpick" role="radiogroup" aria-label="Icon">${PICONS.map(i => `<button type="button" role="radio" aria-checked="${f.icon === i}" class="${f.icon === i ? 'on' : ''}" data-a="pformSet" data-f="icon" data-v="${i}" aria-label="${i}">${ic(i, 15)}</button>`).join('')}</div></div>
-      <div class="field"><span class="label">Color</span><div class="swatches" role="radiogroup" aria-label="Color" style="max-width:140px">${Object.entries(
-        PCOLORS,
+    <div class="field" style="min-width:0"><label class="label" for="p-desc">Deskripsi Singkat</label><textarea class="textarea" id="p-desc" data-in="pform" data-f="desc" rows="2" placeholder="Tentang lomba atau tugas SKL ini...">${esc(f.desc)}</textarea></div>
+    <div class="field" style="min-width:0"><label class="label" for="p-due">Batas Waktu / Deadline</label><input type="date" class="input" id="p-due" data-in="pform" data-f="due" value="${f.due || ''}"></div>
+    
+    <div class="field" style="min-width:0"><span class="label">Icon</span><div class="iconpick" role="radiogroup" aria-label="Icon" style="width:100%">${PICONS.map(i => `<button type="button" role="radio" aria-checked="${f.icon === i}" class="${f.icon === i ? 'on' : ''}" data-a="pformSet" data-f="icon" data-v="${i}" aria-label="${i}">${ic(i, 15)}</button>`).join('')}</div></div>
+    
+    <div class="field" style="min-width:0"><span class="label">Warna</span><div class="swatches" role="radiogroup" aria-label="Color" style="display:flex;flex-wrap:wrap;gap:8px">${Object.entries(
+      PCOLORS,
+    )
+      .map(
+        ([k, v]) =>
+          `<button type="button" role="radio" aria-checked="${f.color === k}" class="sw ${f.color === k ? 'on' : ''}" style="--c:${v};width:24px;height:24px" data-a="pformSet" data-f="color" data-v="${k}" aria-label="${k}">${f.color === k ? ic('check', 12) : ''}</button>`,
       )
-        .map(
-          ([k, v]) =>
-            `<button type="button" role="radio" aria-checked="${f.color === k}" class="sw ${f.color === k ? 'on' : ''}" style="--c:${v};width:22px;height:22px" data-a="pformSet" data-f="color" data-v="${k}" aria-label="${k}">${f.color === k ? ic('check', 12) : ''}</button>`,
-        )
-        .join('')}</div></div>
+      .join('')}</div></div>
+
+    <div class="field" style="border-top:1px solid var(--divider);padding-top:14px;margin-top:4px;min-width:0">
+      <span class="label" style="font-weight:600;color:var(--text);font-size:13px">Tautan Kebutuhan Lomba / Proyek</span>
+      <div class="col" style="gap:8px;margin-top:6px;min-width:0">
+        <div class="field" style="min-width:0"><label class="label" for="p-link-guidebook" style="font-size:12px">📖 Guidebook / Juknis (Drive/PDF)</label><input class="input" id="p-link-guidebook" placeholder="https://drive.google.com/..." value="${esc(f.guidebook || '')}" autocapitalize="off" autocorrect="off"></div>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-submission" style="font-size:12px">📤 Pengumpulan / Submission</label><input class="input" id="p-link-submission" placeholder="https://forms.gle/..." value="${esc(f.submission || '')}" autocapitalize="off" autocorrect="off"></div>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-group" style="font-size:12px">💬 Grup Koordinasi (WA/Telegram)</label><input class="input" id="p-link-group" placeholder="https://chat.whatsapp.com/..." value="${esc(f.group || '')}" autocapitalize="off" autocorrect="off"></div>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-social" style="font-size:12px">📸 Info / Instagram Panitia</label><input class="input" id="p-link-social" placeholder="https://instagram.com/..." value="${esc(f.social || '')}" autocapitalize="off" autocorrect="off"></div>
+      </div>
     </div>
-    <div class="row" style="gap:12px;flex-wrap:wrap">
-      <div class="field" style="flex:1;min-width:150px"><label class="label" for="p-team">Team</label><select class="select" id="p-team" data-in="pform" data-f="team">${teamsList()
-        .map(t => `<option value="${t.id}" ${f.team === t.id ? 'selected' : ''}>${t.name}</option>`)
-        .join('')}</select></div>
-      <div class="field" style="flex:1;min-width:150px"><label class="label" for="p-lead">Lead</label><select class="select" id="p-lead" data-in="pform" data-f="lead">${D()
-        .members.filter(x => x.status === 'active')
-        .map(x => `<option value="${x.id}" ${f.lead === x.id ? 'selected' : ''}>${esc(x.name)}</option>`)
-        .join('')}</select></div>
-      <div class="field" style="flex:1;min-width:150px"><label class="label" for="p-due">Target date</label><input type="date" class="input" id="p-due" data-in="pform" data-f="due" value="${f.due || ''}"></div>
-    </div>
-    ${m.edit ? '' : `<div class="field"><span class="label">Template</span><div class="tmpls" role="radiogroup">${TEMPLATES.map(t => `<button type="button" role="radio" aria-checked="${f.tmpl === t.id}" class="opt ${f.tmpl === t.id ? 'on' : ''}" data-a="pformSet" data-f="tmpl" data-v="${t.id}" style="padding:10px">${ic(t.icon, 16)}<b style="font-size:12.5px">${t.name}</b><span>${t.tasks.length ? t.tasks.length + ' starter tasks' : t.desc}</span></button>`).join('')}</div></div>`}
   </form>
-  <div class="modal-f"><span class="sp"></span><button class="btn btn-secondary" data-a="closeModal">Cancel</button><button class="btn btn-primary" data-a="submitProject">${m.edit ? 'Save changes' : 'Create project'}</button></div>`;
+  <div class="modal-f"><span class="sp"></span><button class="btn btn-secondary" data-a="closeModal">Batal</button><button class="btn btn-primary" data-a="submitProject">${m.edit ? 'Simpan' : 'Buat Proyek'}</button></div>`;
 }
 export const PERMS = ['Can view', 'Can comment', 'Can edit', 'Full access'];
 export function shareModal(m, H) {

@@ -110,3 +110,11 @@ export function filePrev(f) {
   const ext = (f.name.split('.').pop() || '').slice(0, 4);
   return `<div class="fprev">${art}<span class="ext" style="--c:${t.c}">${esc(ext)}</span></div>`;
 }
+
+export function linkIcon(type, s = 14) {
+  if (type === 'guidebook') return ic('book-open', s);
+  if (type === 'submission') return ic('send', s);
+  if (type === 'social') return ic('globe', s);
+  if (type === 'group') return ic('message-circle', s);
+  return ic('link', s);
+}

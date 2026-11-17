@@ -2,8 +2,8 @@
 import { TODAY, dayBucket, diffD, esc, fmtDate, parse } from '../core/utils.js';
 import { ic } from '../core/icons.js';
 import { STATUSES } from '../core/constants.js';
-import { D, TM, isOver, mem, pColor, progressOf, task, tasksOf } from '../core/store.js';
-import { av, avStack, empty, pStatus, stIcon } from '../ui/helpers.js';
+import { D, isOver, pColor, progressOf, task, tasksOf } from '../core/store.js';
+import { empty, linkIcon, pStatus, stIcon } from '../ui/helpers.js';
 import { sortTasks } from '../shell/view-engine.js';
 import { actHtml, miniRow } from '../components/task-list.js';
 
@@ -20,6 +20,7 @@ export function projOverview(p) {
     .activity.filter(a => a.project === p.id)
     .slice(0, 6);
   const daysLeft = diffD(parse(p.due), TODAY);
+  const links = p.links || [];
   return `<div class="page" style="max-width:1160px;padding-top:22px">
     <div class="grid2">
       <div class="stack">
@@ -35,12 +36,33 @@ export function projOverview(p) {
       <div class="stack">
         <section class="panel"><div class="panel-h"><h2>Details</h2></div><div class="panel-b"><dl class="kv">
           <dt>${ic('circle-dot', 14)}Status</dt><dd><button class="pillbtn" data-a="pop" data-pop="pstatus" data-id="${p.id}">${pStatus(p.status)}</button></dd>
-          <dt>${ic('user', 14)}Lead</dt><dd><span class="pillbtn">${av(p.lead, 'sm', false)}${esc(mem(p.lead)?.name)}</span></dd>
-          <dt>${ic('users', 14)}Team</dt><dd><button class="pillbtn" data-a="go" data-r="team" data-id="${p.team}">${ic(TM[p.team].icon, 13)}${TM[p.team].name}</button></dd>
           <dt>${ic('calendar', 14)}Start</dt><dd><span class="pillbtn num">${fmtDate(p.start, true)}</span></dd>
           <dt>${ic('flag', 14)}Due</dt><dd><span class="pillbtn num">${fmtDate(p.due, true)}</span></dd>
-          <dt>${ic('user-plus', 14)}Members</dt><dd><button class="pillbtn" data-a="share" data-id="${p.id}">${avStack(p.members, 6)}<span class="faint">${p.members.length}</span></button></dd>
         </dl></div></section>
+        <section class="panel">
+          <div class="panel-h">
+            <h2>Competition Resources & Links</h2>
+            <div class="acts">
+              <button class="btn btn-sm btn-ghost" data-a="addProjectLink" data-id="${p.id}">${ic('plus', 13)}Add Link</button>
+            </div>
+          </div>
+          <div class="panel-b" style="display:flex;flex-direction:column;gap:8px">
+            ${links.length
+              ? links.map(l => `
+                <div class="row" style="gap:8px;padding:8px 10px;background:var(--surface-2);border-radius:var(--rad);border:1px solid var(--border-subtle);align-items:center">
+                  <span style="color:var(--accent);display:flex;align-items:center">${linkIcon(l.type, 16)}</span>
+                  <a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" class="grow trunc" style="color:var(--text);font-weight:500;font-size:13px;text-decoration:none" title="${esc(l.url)}">
+                    ${esc(l.label)}
+                    <span class="faint" style="font-size:11.5px;font-weight:400;margin-left:4px">${ic('external-link', 11)}</span>
+                  </a>
+                  <span class="badge" style="font-size:10.5px;text-transform:capitalize">${esc(l.type || 'link')}</span>
+                  <button class="ibtn ibtn-xs" data-a="removeProjectLink" data-pid="${p.id}" data-lid="${l.id}" title="Hapus link" aria-label="Hapus link" style="color:var(--text-3)">${ic('trash-2', 13)}</button>
+                </div>
+              `).join('')
+              : `<div class="empty sm faint" style="padding:14px 0;text-align:center">${ic('link', 18)}<div style="margin-top:6px;font-size:12.5px">Belum ada link / sumber lomba.</div><button class="btn btn-xs btn-secondary" style="margin-top:8px" data-a="addProjectLink" data-id="${p.id}">${ic('plus', 12)}Tambah Link</button></div>`
+            }
+          </div>
+        </section>
         <section class="panel"><div class="panel-h"><h2>Milestones</h2></div><div class="panel-b">${
           (p.milestones || [])
             .map(m => {

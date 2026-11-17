@@ -26,10 +26,9 @@ export function commands() {
       },
     },
     { id: 'c-home', name: 'Go to Home', icon: 'house', kbd: 'G H', run: () => go('home') },
-    { id: 'c-inbox', name: 'Go to Inbox', icon: 'inbox', kbd: 'G I', run: () => go('inbox') },
-    { id: 'c-my', name: 'Go to My Tasks', icon: 'circle-check', kbd: 'G T', run: () => go('mytasks') },
-    { id: 'c-projs', name: 'Go to Projects', icon: 'folder-kanban', kbd: 'G P', run: () => go('projects') },
     { id: 'c-cal', name: 'Go to Calendar', icon: 'calendar', kbd: 'G C', run: () => go('calendar') },
+    { id: 'c-projs', name: 'Go to Projects', icon: 'folder-kanban', kbd: 'G P', run: () => go('projects') },
+    { id: 'c-notes', name: 'Go to Quick Notes', icon: 'sticky-note', kbd: 'G N', run: () => go('notes') },
     { id: 'c-tl', name: 'Go to Timeline', icon: 'chart-gantt', run: () => go('timeline') },
     { id: 'c-mem', name: 'Go to Members', icon: 'users', run: () => go('members') },
     { id: 'c-set', name: 'Open settings', icon: 'settings', kbd: 'G S', run: () => go('settings') },
@@ -113,7 +112,7 @@ export function paletteItems() {
       name: 'Suggested',
       items: [
         { icon: 'clock-alert', name: 'Overdue tasks', run: () => A.goTasks({ dataset: { f: 'overdue' } }) },
-        { icon: 'user', name: 'Tasks assigned to me', run: () => go('mytasks') },
+        { icon: 'calendar', name: 'Kalender Tugas', run: () => go('calendar') },
         {
           icon: 'signal-high',
           name: 'High priority in Website Redesign',

@@ -10,6 +10,7 @@ import { PTABS } from '../pages/project.js';
 import { tlAfter } from '../views/timeline.js';
 import { renderLayer } from '../overlays/drawer.js';
 import { placePop } from '../overlays/popovers.js';
+import { placeAnchoredModals } from '../overlays/modals.js';
 import { renderAuth } from '../pages/auth.js';
 
 export const ROUTE_NAMES = {
@@ -33,6 +34,7 @@ export const ROUTE_NAMES = {
   system: 'Design system',
   states: 'System states',
   archive: 'Archive',
+  notes: 'Quick Notes',
 };
 export const ROUTE_ICONS = {
   home: 'house',
@@ -53,9 +55,50 @@ export const ROUTE_ICONS = {
   system: 'component',
   states: 'layers',
   archive: 'archive',
+  notes: 'sticky-note',
 };
 
+export function routeToHash(route, params = {}) {
+  if (S.ui.auth) return `#/${S.ui.auth}`;
+  if (route === 'project') {
+    const id = params.id || '';
+    const tab = params.tab || 'board';
+    return `#/project/${id}/${tab}`;
+  }
+  if (params.id) {
+    return `#/${route}/${params.id}`;
+  }
+  return `#/${route || 'calendar'}`;
+}
+
+export function parseHash(hashStr) {
+  const clean = (hashStr || '').replace(/^#\/?/, '').trim();
+  if (!clean) return null;
+  const parts = clean.split('/').filter(Boolean);
+  const authRoutes = ['login', 'signup', 'forgot', 'reset', 'verify', 'onboarding'];
+  if (authRoutes.includes(parts[0])) {
+    return { auth: parts[0] };
+  }
+  let r = parts[0];
+  if (r === 'mytasks') r = 'calendar';
+  if (r === 'project') {
+    return {
+      route: 'project',
+      params: { id: parts[1] || '', tab: parts[2] || 'board' },
+    };
+  }
+  if (ROUTE_NAMES[r]) {
+    const params = parts[1] ? { id: parts[1] } : {};
+    return { route: r, params };
+  }
+  return null;
+}
+
+let _syncingHash = false;
+export const isSyncingHash = () => _syncingHash;
+
 export function go(route, params = {}, opt = {}) {
+  if (route === 'mytasks') route = 'calendar';
   if (route === 'project' && !params.tab) params.tab = 'board';
   if (!opt.back) S.ui.history.push({ route: S.ui.route, params: S.ui.params });
   const same = S.ui.route === route && JSON.stringify(S.ui.params) === JSON.stringify(params);
@@ -71,6 +114,22 @@ export function go(route, params = {}, opt = {}) {
   clearTimeout(go._t);
   S.ui.loading = false;
   if (!same) fxSet(opt.tab ? { tab: true, tabs: true } : { route: true, tabs: true });
+
+  if (!opt.fromHash && typeof window !== 'undefined') {
+    const targetHash = routeToHash(route, params);
+    if (location.hash !== targetHash) {
+      _syncingHash = true;
+      if (opt.replace) {
+        history.replaceState(null, '', targetHash);
+      } else {
+        location.hash = targetHash;
+      }
+      setTimeout(() => {
+        _syncingHash = false;
+      }, 0);
+    }
+  }
+
   render();
   const c = $('.content');
   if (c && !same) c.scrollTop = 0;
@@ -198,6 +257,8 @@ export function afterRender() {
   selectMenu.close();
   enhanceSelects();
   placePop();
+  placeAnchoredModals();
+  requestAnimationFrame(placeAnchoredModals);
   $$('textarea[data-autosize]').forEach(autosize);
   const pal = $('#pal-in');
   if (pal && document.activeElement !== pal && !S.ui.pop) pal.focus();

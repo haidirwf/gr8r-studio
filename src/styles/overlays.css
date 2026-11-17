@@ -19,6 +19,9 @@
   justify-content: center;
   padding: 10vh 16px 16px;
   overflow-y: auto;
+  overflow-x: hidden;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 .modal {
   width: 100%;
@@ -29,12 +32,45 @@
   display: flex;
   flex-direction: column;
   max-height: 80vh;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 .modal.enter {
   animation: modalIn 0.26s var(--ease) both;
 }
 .modal.sm {
   max-width: 420px;
+}
+/* Anchored quick task popup (Desktop attached to date/task, mobile bottom-sheet) */
+@media (min-width: 769px) {
+  .scrim.scrim-anchored {
+    background: rgba(0, 0, 0, 0.18);
+  }
+  .modal-wrap.modal-anchored-wrap {
+    display: block;
+    padding: 0;
+    overflow: hidden;
+  }
+  .modal.quick-task-popover {
+    position: fixed;
+    margin: 0;
+    width: 390px;
+    max-width: 410px;
+    max-height: calc(100vh - 24px);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--border);
+    border: 1px solid var(--border);
+    animation: popIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+@media (max-width: 768px) {
+  .modal.quick-task-popover {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
 }
 .modal.lg {
   max-width: 720px;
@@ -56,9 +92,14 @@
 .modal-b {
   padding: 14px 16px;
   overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  -webkit-overflow-scrolling: touch;
 }
 .modal-f {
   display: flex;

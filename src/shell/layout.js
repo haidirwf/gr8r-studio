@@ -1,8 +1,8 @@
 /* ---------- shell ---------- */
-import { MOD, TODAY, diffD, esc, parse } from '../core/utils.js';
+import { MOD, esc } from '../core/utils.js';
 import { ic, wsLogo } from '../core/icons.js';
 import { PSTAT } from '../core/constants.js';
-import { D, S, allTasks, mem, pColor, proj, team, teamsList, visibleProjects } from '../core/store.js';
+import { D, S, mem, pColor, proj, team, visibleProjects } from '../core/store.js';
 import { av } from '../ui/helpers.js';
 import { ROUTE_NAMES } from './render.js';
 import { skeleton } from './skeletons.js';
@@ -24,6 +24,7 @@ import { pageWsTimeline } from '../views/timeline.js';
 import { pageSettings } from '../pages/settings.js';
 import { pageStates, pageSystem } from '../pages/design-system.js';
 import { pageArchive } from '../features/archive.js';
+import { pageNotes } from '../pages/notes.js';
 
 export function renderShell() {
   const u = S.ui;
@@ -63,6 +64,7 @@ export function renderPage() {
       system: pageSystem,
       states: pageStates,
       archive: pageArchive,
+      notes: pageNotes,
     };
     return (P[r] || page404)();
   } catch (e) {
@@ -78,41 +80,26 @@ export function sItem(route, label, icon, opt = {}) {
 export function renderSidebar() {
   const u = S.ui,
     d = D();
-  const unreadInbox = d.notifs.filter(n => !n.read && n.type !== 'update').length;
-  const unreadAll = d.notifs.filter(n => !n.read).length;
-  const myOpen = allTasks().filter(t => t.assignee === d.me && t.status !== 'done' && t.due && diffD(parse(t.due), TODAY) <= 0).length;
   const projs = visibleProjects().filter(p => p.status !== 'complete');
   const inProj = u.route === 'project' ? u.params.id : null;
   return `<nav class="side" aria-label="Main">
     <div class="side-top">
       <div class="row" style="gap:2px">
-        <button class="ws grow" data-a="pop" data-pop="ws" aria-haspopup="menu" aria-label="Switch workspace">
+        <button class="ws grow" data-a="go" data-r="calendar" aria-label="Gr8r Workspace">
           ${wsLogo(d.ws, 22)}
           <span class="ws-name trunc">${esc(d.ws.name)}</span>
-          <span class="chev-d faint">${ic('chevrons-up-down', 13)}</span>
         </button>
         ${u.collapsed ? '' : `<button class="ibtn ibtn-sm hide-m" data-a="toggleSide" data-tip="Collapse sidebar  [" aria-label="Collapse sidebar">${ic('panel-left', 15)}</button>`}
       </div>
     </div>
     <div class="side-scroll" data-keep="side">
       ${u.collapsed ? `<button class="sitem" data-a="toggleSide" data-tip="Expand sidebar" data-tip-pos="right" aria-label="Expand sidebar">${ic('panel-left', 16)}</button>` : ''}
-      ${sItem('home', 'Home', 'house')}
-      ${sItem('inbox', 'Inbox', 'inbox', { ct: unreadInbox || '', dot: true })}
-      ${sItem('mytasks', 'My Tasks', 'circle-check', { ct: myOpen || '' })}
-      ${sItem('favorites', 'Favorites', 'star')}
-      ${sItem('notifications', 'Notifications', 'bell', { ct: unreadAll || '' })}
-      <div class="sgroup">
-        <div class="sgroup-h">Workspace</div>
-        ${sItem('overview', 'Overview', 'layout-dashboard')}
-        ${sItem('projects', 'Projects', 'folder-kanban')}
-        ${sItem('tasks', 'Tasks', 'list-checks')}
-        ${sItem('calendar', 'Calendar', 'calendar')}
-        ${sItem('timeline', 'Timeline', 'chart-gantt')}
-        ${sItem('members', 'Members', 'users')}
-        ${sItem('activity', 'Activity', 'activity')}
-      </div>
+      ${sItem('calendar', 'Calendar', 'calendar')}
+      ${sItem('projects', 'Projects & Lomba', 'folder-kanban')}
+      ${sItem('notes', 'Notes', 'sticky-note', { ct: (D().notes || []).length || '' })}
+      ${sItem('home', 'Dashboard', 'layout-dashboard')}
       <div class="sgroup" id="side-projects">
-        <div class="sgroup-h"><span>Projects</span><span class="sp"></span><button class="ibtn ibtn-xs" data-a="newProject" data-tip="New project  P" aria-label="New project">${ic('plus', 14)}</button></div>
+        <div class="sgroup-h"><span>Projects & Lomba</span><span class="sp"></span><button class="ibtn ibtn-xs" data-a="newProject" data-tip="New project  P" aria-label="New project">${ic('plus', 14)}</button></div>
         ${projs
           .map(p => {
             const open = !!u.expanded[p.id];
@@ -143,12 +130,6 @@ export function renderSidebar() {
           })
           .join('')}
         ${sItem('archive', 'Archive', 'archive', { ct: D().tasks.filter(t => t.archived).length + D().projects.filter(p => p.archived).length || '' })}
-      </div>
-      <div class="sgroup">
-        <div class="sgroup-h"><span>Teams</span><span class="sp"></span><button class="ibtn ibtn-xs" data-a="newTeam" data-tip="New team" aria-label="New team">${ic('plus', 14)}</button></div>
-        ${teamsList()
-          .map(t => sItem('team', t.name, t.icon, { id: t.id }))
-          .join('')}
       </div>
     </div>
     <div class="side-bot">
@@ -194,18 +175,16 @@ export function renderTopbar() {
     <nav class="crumbs trunc" aria-label="Breadcrumb">${crumbs()}</nav>
     <span class="sp"></span>
     <button class="topsearch" data-a="openPalette" aria-label="Search and commands">${ic('search', 14)}<span class="lbltxt">Search or jump to…</span><span class="kbd">${MOD}K</span></button>
-    <button class="ibtn" data-a="go" data-r="notifications" data-tip="Notifications" aria-label="Notifications">${ic('bell', 16)}${D().notifs.some(n => !n.read) ? '<span style="position:absolute;top:6px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--surface)"></span>' : ''}</button>
     <button class="btn btn-secondary btn-sm" data-a="pop" data-pop="create" aria-haspopup="menu" aria-label="Create new">${ic('plus', 14)}<span class="hide-m">New</span>${ic('chevron-down', 12, 'hide-m')}</button>
     <button class="ibtn hide-m" data-a="pop" data-pop="user" aria-label="Account menu" style="width:auto;padding:0 2px">${av(D().me, 'md', false)}</button>
   </header>`;
 }
 export function renderBottomNav() {
   const r = S.ui.route;
-  const unread = D().notifs.some(n => !n.read && n.type !== 'update');
   const b = (route, label, icon, extra = '') =>
     `<button class="${r === route ? 'on' : ''}" data-a="go" data-r="${route}">${ic(icon, 19)}<span>${label}</span>${extra}</button>`;
   return `<nav class="bottomnav" aria-label="Primary">
-    ${b('home', 'Home', 'house')}${b('mytasks', 'My Tasks', 'circle-check')}${b('projects', 'Projects', 'folder-kanban')}${b('inbox', 'Inbox', 'inbox', unread ? '<span class="bdot"></span>' : '')}
+    ${b('calendar', 'Calendar', 'calendar')}${b('projects', 'Projects', 'folder-kanban')}${b('notes', 'Notes', 'sticky-note')}${b('home', 'Dashboard', 'layout-dashboard')}
     <button data-a="openMnav">${ic('ellipsis', 19)}<span>More</span></button>
   </nav>`;
 }

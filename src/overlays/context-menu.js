@@ -12,8 +12,7 @@ export function ctxMenu(p) {
     const t = task(p.id);
     if (!t) return '';
     return (
-      I('openQuickTask', 'layout-list', 'Buka Tugas') +
-      I('openTask', 'panel-right-open', 'Buka Panel Samping') +
+      I('openQuickTask', 'layout-list', 'Buka Detail Tugas') +
       I('editTask', 'pencil', 'Edit Lengkap', '', 'E') +
       I('toggleDone', t.status === 'done' ? 'rotate-ccw' : 'circle-check', t.status === 'done' ? 'Buka Kembali' : 'Tandai Selesai') +
       sep +

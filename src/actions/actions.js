@@ -437,24 +437,7 @@ A.formSetColor = el => {
 
 /* ---------- tasks ---------- */
 A.openTask = el => {
-  const id = el.dataset.id;
-  if (!task(id)) return;
-  if (!canSee(proj(task(id).project))) {
-    toast("You don't have access to that task", { kind: 'err' });
-    return;
-  }
-  if (!S.ui.drawer || !document.activeElement?.closest?.('.drawer')) S.ui.drawerOpener = el.isConnected ? focusKey(el) : S.ui.drawerOpener;
-  S.ui.drawer = id;
-  S.ui.drawerFull = S.prefs.openTasks === 'full' || (S.ui.drawerFull && S.ui.drawer === id);
-  S.ui.pop = null;
-  S.ui.palette = null;
-  S.ui.modals = [];
-  S.ui.mention = null;
-  S.ui.subOpen = null;
-  S.ui.drawerTab = S.ui.drawerTab || 'comments';
-  render();
-  const dr = $('.drawer');
-  if (dr && !dr.contains(document.activeElement)) dr.focus({ preventScroll: true });
+  A.openQuickTask(el);
 };
 A.closeDrawer = () => {
   S.ui.drawer = null;
@@ -1347,17 +1330,19 @@ A.clearProjFilters = () => {
   render();
 };
 A.openQuickTask = el => {
-  const id = el.dataset.id;
+  const id = el?.dataset?.id;
   if (!task(id)) return;
   S.ui.pop = null;
-  const chipRect = el.getBoundingClientRect();
-  const cell = el.closest('.cday') || el.closest('.cal-agenda-card') || el;
-  const cellRect = cell ? cell.getBoundingClientRect() : null;
+  S.ui.drawer = null;
+  const hasRect = typeof el?.getBoundingClientRect === 'function';
+  const chipRect = hasRect ? el.getBoundingClientRect() : null;
+  const cell = hasRect ? (el.closest?.('.cday') || el.closest?.('.cal-agenda-card') || el) : null;
+  const cellRect = cell && typeof cell.getBoundingClientRect === 'function' ? cell.getBoundingClientRect() : null;
 
   openModal({
     type: 'quickTask',
     id,
-    anchor: {
+    anchor: chipRect ? {
       left: chipRect.left,
       right: chipRect.right,
       top: chipRect.top,
@@ -1368,7 +1353,7 @@ A.openQuickTask = el => {
       cellRight: cellRect?.right,
       cellTop: cellRect?.top,
       cellBottom: cellRect?.bottom,
-    },
+    } : null,
   });
 };
 A.toggleTaskDone = el => A.toggleDone(el);

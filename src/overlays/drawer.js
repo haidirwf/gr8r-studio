@@ -15,8 +15,7 @@ import { subtaskHtml } from '../features/subtasks.js';
 export function renderLayer() {
   const u = S.ui;
   let h = '';
-  if (u.drawer && task(u.drawer))
-    h += (u.drawerFull ? `<div class="drawer-scrim full${u.fx.drawer ? ' enter' : ''}" data-a="closeDrawer"></div>` : '') + drawerHtml(task(u.drawer));
+  // Task side drawer (panel samping) completely removed per user request
   u.modals.forEach((m, i) => {
     const en = u.fx.modal === i + 1;
     const isAnchored = m.anchor && m.type === 'quickTask';

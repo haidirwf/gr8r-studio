@@ -300,7 +300,6 @@ export function quickTaskModal(m, H) {
     <button class="btn btn-ghost btn-sm text-danger" data-a="deleteQuickTask" data-id="${t.id}">${ic('trash-2', 14)}<span>Hapus</span></button>
     <div class="row" style="gap:8px">
       <button class="btn btn-secondary btn-sm" data-a="closeModal">Tutup</button>
-      <button class="btn btn-ghost btn-sm" data-a="openTask" data-id="${t.id}">${ic('panel-right', 14)}<span>Buka Detail</span></button>
       ${p ? `<button class="btn btn-primary btn-sm" data-a="goProjectFromTask" data-id="${p.id}"><span>Lihat Proyek</span>${ic('arrow-right', 14)}</button>` : ''}
     </div>
   </div>`;

@@ -305,18 +305,6 @@ export function settingsBody(sec, title) {
             P.home,
           ),
         ) +
-        srow(
-          'Open tasks in',
-          'Side panel keeps your place in the list.',
-          sel(
-            'openTasks',
-            [
-              ['drawer', 'Side panel'],
-              ['full', 'Full page'],
-            ],
-            P.openTasks,
-          ),
-        ) +
         srow('Confirm before deleting tasks', '', tog('confirmDel', P.confirmDel !== false))
       );
     case 'shortcuts':

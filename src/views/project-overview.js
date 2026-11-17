@@ -25,7 +25,6 @@ export function projOverview(p) {
     ? (annDays === 0 ? '📢 Pengumuman hari ini!' : annDays > 0 ? `📢 ${annDays} hari lagi menuju pengumuman` : `📢 Diumumkan ${fmtDate(p.announce)}`)
     : '';
   const links = p.links || [];
-  const webLink = links.find(l => l.type === 'website') || links[0];
   return `<div class="page" style="max-width:1160px;padding-top:22px">
     <div class="grid2">
       <div class="stack">
@@ -42,7 +41,6 @@ export function projOverview(p) {
         <section class="panel"><div class="panel-h"><h2>Details</h2></div><div class="panel-b"><dl class="kv">
           <dt>${ic('circle-dot', 14)}Status</dt><dd><button class="pillbtn" data-a="pop" data-pop="pstatus" data-id="${p.id}">${pStatus(p.status)}</button></dd>
           <dt>${ic('tag', 14)}Tags</dt><dd class="row" style="gap:4px;flex-wrap:wrap">${(p.tags || []).length ? (p.tags || []).map(t => `<span class="badge" style="font-size:11px;padding:2px 7px;font-weight:500">${esc(t)}</span>`).join('') : '<span class="faint">Belum ada tag</span>'}</dd>
-          ${webLink ? `<dt>${ic('globe', 14)}Link Lomba</dt><dd><a href="${esc(webLink.url)}" target="_blank" rel="noopener noreferrer" class="res-link" style="font-size:12.5px" title="${esc(webLink.url)}"><span class="trunc">${esc(webLink.label)}</span> ${ic('arrow-up-right', 11)}</a></dd>` : ''}
           <dt>${ic('calendar', 14)}Start</dt><dd><button class="pillbtn num" data-a="pop" data-pop="date" data-field="start" data-ctx="project" data-id="${p.id}" title="Klik untuk ubah tanggal mulai">${p.start ? fmtDate(p.start, true) : '<span class="faint">Atur tanggal</span>'}</button></dd>
           <dt>${ic('flag', 14)}Due</dt><dd><button class="pillbtn num" data-a="pop" data-pop="date" data-field="due" data-ctx="project" data-id="${p.id}" title="Klik untuk ubah tenggat waktu">${p.due ? fmtDate(p.due, true) : '<span class="faint">Atur deadline</span>'}</button></dd>
           <dt>${ic('megaphone', 14)}Pengumuman</dt><dd><button class="pillbtn num" data-a="pop" data-pop="date" data-field="announce" data-ctx="project" data-id="${p.id}" title="Klik untuk ubah tanggal pengumuman" style="${p.status === 'waiting' || p.announce ? 'color:#8b5cf6;border-color:rgba(139,92,246,0.3)' : ''}">${p.announce ? fmtDate(p.announce, true) : '<span class="faint">Atur pengumuman</span>'}</button></dd>

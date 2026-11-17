@@ -201,16 +201,23 @@ export function calendarHtml(ts, opt = {}) {
   const animClass = S.ui.calAnimDir ? ` anim-${S.ui.calAnimDir}` : '';
   S.ui.calAnimDir = null;
 
-  return `<div class="cal">
-    <div class="cal-toolbar">
-      <div class="cal-nav-group">
-        <h2 class="cal-label" aria-live="polite">${label}</h2>
-        <div class="cal-arrows-box">
-          <button class="cal-arrow-btn" data-a="calNav" data-d="-1" aria-label="Bulan Sebelumnya" title="Bulan Sebelumnya">${ic('chevron-left', 16)}</button>
-          <button class="cal-arrow-btn" data-a="calNav" data-d="1" aria-label="Bulan Selanjutnya" title="Bulan Selanjutnya">${ic('chevron-right', 16)}</button>
+  const toolbarHtml = opt.hideToolbar
+    ? ''
+    : `<div class="cal-toolbar">
+        <div class="cal-toolbar-title">
+          <span style="font-size:15px;font-weight:600;color:var(--text)">Kalender</span>
         </div>
-      </div>
-    </div>
+        <div class="cal-nav-group" style="margin-left: auto;">
+          <h2 class="cal-label" aria-live="polite">${label}</h2>
+          <div class="cal-arrows-box">
+            <button class="cal-arrow-btn" data-a="calNav" data-d="-1" aria-label="Bulan Sebelumnya" title="Bulan Sebelumnya">${ic('chevron-left', 16)}</button>
+            <button class="cal-arrow-btn" data-a="calNav" data-d="1" aria-label="Bulan Selanjutnya" title="Bulan Selanjutnya">${ic('chevron-right', 16)}</button>
+          </div>
+        </div>
+      </div>`;
+
+  return `<div class="cal">
+    ${toolbarHtml}
 
     <div class="cal-month-wrap${animClass}">
       <div class="cal-h">${wdn.map(d => `<div>${d}</div>`).join('')}</div>
@@ -252,6 +259,25 @@ export function calendarHtml(ts, opt = {}) {
 export function pageWsCalendar() {
   const key = 'cal';
   const v = viewOf(key);
-  return `<div class="page flush"><div class="ph"><div><div class="cal-title-row"><h1>Kalender Tugas</h1><button class="btn btn-primary btn-sm" data-a="newTask">${ic('plus', 14)}<span>Tugas Baru</span></button></div><p>Pantau deadline lomba dan tugas SKL secara visual.</p></div></div>
-  ${calendarHtml(applyView(allTasks(), v), { key, events: true })}</div>`;
+  const cur = parse(S.ui.calDate || iso(TODAY));
+  const label = `${MONL[cur.getMonth()]} ${cur.getFullYear()}`;
+  return `<div class="page flush">
+    <div class="ph cal-ph">
+      <div class="cal-title-block">
+        <h1>Kalender Tugas</h1>
+        <p>Pantau deadline lomba dan tugas SKL secara visual.</p>
+      </div>
+      <div class="cal-header-corner">
+        <div class="cal-nav-group">
+          <h2 class="cal-label" aria-live="polite">${label}</h2>
+          <div class="cal-arrows-box">
+            <button class="cal-arrow-btn" data-a="calNav" data-d="-1" aria-label="Bulan Sebelumnya" title="Bulan Sebelumnya">${ic('chevron-left', 16)}</button>
+            <button class="cal-arrow-btn" data-a="calNav" data-d="1" aria-label="Bulan Selanjutnya" title="Bulan Selanjutnya">${ic('chevron-right', 16)}</button>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" data-a="newTask">${ic('plus', 14)}<span>Tugas Baru</span></button>
+      </div>
+    </div>
+    ${calendarHtml(applyView(allTasks(), v), { key, events: true, hideToolbar: true })}
+  </div>`;
 }

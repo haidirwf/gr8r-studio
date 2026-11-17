@@ -102,24 +102,17 @@ export function calendarHtml(ts, opt = {}) {
   const selectedItems = itemsOn(selectedDate);
   const isSelectedToday = diffD(parse(selectedDate), TODAY) === 0;
 
-  const projs = [...new Set(ts.map(t => t.project))].map(proj).filter(Boolean);
-
   return `<div class="cal">
     <div class="cal-toolbar">
       <div class="cal-nav-group">
-        <div class="cal-arrows-box">
-          <button class="cal-arrow-btn" data-a="calNav" data-d="-1" aria-label="Bulan Sebelumnya">${ic('chevron-left', 16)}</button>
-          <button class="cal-arrow-btn" data-a="calNav" data-d="1" aria-label="Bulan Selanjutnya">${ic('chevron-right', 16)}</button>
-        </div>
         <h2 class="cal-label" aria-live="polite">${label}</h2>
-        <button class="btn btn-secondary btn-sm cal-today-btn" data-a="calNav" data-d="0">Hari Ini</button>
-      </div>
-      <div class="cal-actions-group">
-        ${!opt.project && projs.length > 0
-          ? `<span class="row hide-m" style="gap:10px;font-size:12px;color:var(--text-2);margin-right:8px">${projs
-              .map(p => `<span class="row" style="gap:5px"><span class="pdot" style="--c:${pColor(p)}"></span>${esc(p.name)}</span>`)
-              .join('')}</span>`
-          : ''}
+        <div class="cal-nav-btns">
+          <button class="btn btn-secondary btn-sm cal-today-btn" data-a="calNav" data-d="0">${ic('calendar', 13)}<span>Hari Ini</span></button>
+          <div class="cal-arrows-box">
+            <button class="cal-arrow-btn" data-a="calNav" data-d="-1" aria-label="Bulan Sebelumnya" title="Bulan Sebelumnya">${ic('chevron-left', 16)}</button>
+            <button class="cal-arrow-btn" data-a="calNav" data-d="1" aria-label="Bulan Selanjutnya" title="Bulan Selanjutnya">${ic('chevron-right', 16)}</button>
+          </div>
+        </div>
       </div>
     </div>
 

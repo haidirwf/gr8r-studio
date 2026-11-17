@@ -228,10 +228,9 @@ export function settingsBody(sec, title) {
             [
               ['overview', 'Overview'],
               ['board', 'Board'],
-              ['list', 'List'],
               ['timeline', 'Timeline'],
             ],
-            P.defaultTab || 'overview',
+            (P.defaultTab === 'list' || P.defaultTab === 'table' ? 'board' : P.defaultTab) || 'overview',
           ),
         ) +
         srow('Show completed tasks on boards', '', tog('showDoneBoard', P.showDoneBoard !== false)) +

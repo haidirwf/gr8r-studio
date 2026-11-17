@@ -3,7 +3,7 @@ import { $$, MOD, TODAY, ago, diffD, esc, fmtDate, parse } from '../core/utils.j
 import { ic } from '../core/icons.js';
 import { PCOLORS, PICONS, PR, PROJECT_TAGS, ST, TASK_COLORS } from '../core/constants.js';
 import { D, S, mem, pColor, proj, task, teamsList } from '../core/store.js';
-import { FT, av, filePrev, lbl, prIcon, prPill, stIcon, stPill } from '../ui/helpers.js';
+import { FT, av, filePrev, lbl, pIcon, prIcon, prPill, stIcon, stPill } from '../ui/helpers.js';
 import { focusKey, render } from '../shell/render.js';
 import { teamModal } from '../features/teams.js';
 import { noteModal } from '../pages/notes.js';
@@ -130,7 +130,7 @@ export function modalHtml(m) {
     case 'saveView':
       return wrap(
         'sm',
-        `${H('Save view', 'Save the current filters as a tab on this project.')}<form class="modal-b" data-submit="saveViewSubmit"><div class="field"><label class="label" for="sv-name">View name</label><input class="input" id="sv-name" placeholder="e.g. Design review queue" autofocus></div><div class="field"><label class="label" for="sv-type">Layout</label><select class="select" id="sv-type"><option value="list">List</option><option value="board">Board</option></select></div>${m.nf ? `<div class="hint">${m.nf} filter${m.nf > 1 ? 's' : ''} will be saved with this view.</div>` : '<div class="alert info">' + ic('info', 14) + '<span>No filters are active — the view will show all tasks. You can add filters after saving.</span></div>'}</form><div class="modal-f"><span class="sp"></span><button class="btn btn-secondary" data-a="closeModal">Cancel</button><button class="btn btn-primary" data-a="saveViewSubmit">Save view</button></div>`,
+        `${H('Save view', 'Save the current filters as a tab on this project.')}<form class="modal-b" data-submit="saveViewSubmit"><div class="field"><label class="label" for="sv-name">View name</label><input class="input" id="sv-name" placeholder="e.g. Design review queue" autofocus></div><div class="field"><label class="label" for="sv-type">Layout</label><select class="select" id="sv-type"><option value="board">Board</option></select></div>${m.nf ? `<div class="hint">${m.nf} filter${m.nf > 1 ? 's' : ''} will be saved with this view.</div>` : '<div class="alert info">' + ic('info', 14) + '<span>No filters are active — the view will show all tasks. You can add filters after saving.</span></div>'}</form><div class="modal-f"><span class="sp"></span><button class="btn btn-secondary" data-a="closeModal">Cancel</button><button class="btn btn-primary" data-a="saveViewSubmit">Save view</button></div>`,
       );
   }
   return '';
@@ -147,7 +147,7 @@ export function taskModal(m, H) {
     <div class="field"><label class="sr" for="f-title">Nama tugas atau pengingat</label><input class="input input-lg ${err ? 'is-error' : ''}" id="f-title" data-in="form" data-f="title" value="${esc(f.title)}" placeholder="Contoh: Beli perlengkapan, deadline revisi..." autofocus aria-invalid="${!!err}" aria-describedby="f-title-err" style="font-size:15px;font-weight:500">${err ? `<span class="err" id="f-title-err">${ic('circle-alert', 12)}${err}</span>` : ''}</div>
     <div class="field"><label class="sr" for="f-desc">Deskripsi</label><textarea class="textarea" id="f-desc" data-in="form" data-f="desc" placeholder="Catatan tambahan… (opsional)" rows="2">${esc(f.desc)}</textarea></div>
     <div class="row" style="flex-wrap:wrap;gap:6px">
-      ${formChip('project', p ? `<span class="pdot" style="--c:${pColor(p)}"></span>${esc(p.name)}` : `${ic('bell', 13)}<span>Tanpa Proyek (Pengingat)</span>`, 'Project')}
+      ${formChip('project', p ? `${pIcon(p, 'xs')}<span>${esc(p.name)}</span>` : `${ic('bell', 13)}<span>Tanpa Proyek (Pengingat)</span>`, 'Project')}
       ${formChip('status', stPill(f.status), 'Status')}
       ${formChip('assignee', `${av(f.assignee, 'sm', false)}${esc(mem(f.assignee)?.name || 'Assignee')}`, 'Assignee')}
       ${formChip('priority', prPill(f.priority), 'Priority')}
@@ -252,7 +252,8 @@ export function quickTaskModal(m, H) {
       </button>
 
       <button type="button" class="pillbtn bordered" data-a="pop" data-pop="project" data-id="${t.id}" aria-label="Proyek" style="cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">
-        ${p ? `<span class="pdot" style="--c:${pColor(p)}"></span><span>${esc(p.name)}</span>` : `${ic('bell', 13)}<span>Pengingat Pribadi</span>`}
+        ${p ? pIcon(p, 'sm') : ic('bell', 13)}
+        <span>${esc(p ? p.name : 'Pengingat Pribadi')}</span>
         ${ic('chevron-down', 11)}
       </button>
     </div>

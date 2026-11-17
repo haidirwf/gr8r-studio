@@ -119,7 +119,6 @@ export function renderSidebar() {
             <div class="sub ${open && !u.collapsed ? 'open' : ''}">
               ${[
                 ['board', 'Board', 'square-kanban'],
-                ['list', 'List', 'list'],
                 ['timeline', 'Timeline', 'chart-gantt'],
                 ['files', 'Files', 'paperclip'],
               ]

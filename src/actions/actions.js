@@ -206,8 +206,8 @@ A.go = el => {
   const r = el.dataset.r;
   const p = {};
   if (el.dataset.id) p.id = el.dataset.id;
-  if (el.dataset.tab) p.tab = el.dataset.tab;
-  else if (r === 'project') p.tab = S.prefs.defaultTab || 'overview';
+  if (el.dataset.tab) p.tab = el.dataset.tab === 'list' || el.dataset.tab === 'table' ? 'board' : el.dataset.tab;
+  else if (r === 'project') p.tab = (S.prefs.defaultTab === 'list' || S.prefs.defaultTab === 'table' ? 'board' : S.prefs.defaultTab) || 'overview';
   if (el.dataset.sec) p.sec = el.dataset.sec;
   S.ui.palette = null;
   const tabOnly = r === 'project' && S.ui.route === 'project' && S.ui.params.id === p.id;
@@ -221,7 +221,7 @@ A.back = () => {
   }
 };
 A.reload = () => render();
-A.openProject = el => go('project', { id: el.dataset.id, tab: S.prefs.defaultTab || 'overview' });
+A.openProject = el => go('project', { id: el.dataset.id, tab: (S.prefs.defaultTab === 'list' || S.prefs.defaultTab === 'table' ? 'board' : S.prefs.defaultTab) || 'overview' });
 A.set = el => {
   const k = el.dataset.k;
   let v = el.dataset.v;

@@ -45,7 +45,7 @@ export const stPill = st => `${stIcon(st)}<span>${ST[st].name}</span>`;
 export const prPill = p => `${prIcon(p)}<span>${PR[p || 'none'].name}</span>`;
 export const lbl = id => (LB[id] ? `<span class="lbl" style="--c:${LB[id].c}"><i></i>${LB[id].name}</span>` : '');
 export const pIcon = (p, cls = '', s = 15) => {
-  const iconSize = cls.includes('xl') ? 24 : cls.includes('lg') ? 20 : cls.includes('md') ? 16 : cls.includes('sm') ? 12 : cls.includes('xs') ? 10 : s;
+  const iconSize = cls.includes('xl') ? 28 : cls.includes('lg') ? 20 : cls.includes('md') ? 16 : cls.includes('sm') ? 12 : cls.includes('xs') ? 10 : s;
   if (p?.image) {
     return `<span class="picon ${cls} picon-has-img" style="--c:${pColor(p)};overflow:hidden"><img src="${p.image}" alt="" class="picon-img" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block" /></span>`;
   }

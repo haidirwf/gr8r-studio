@@ -3,7 +3,7 @@ import { $, MOD, MONL, TODAY, WD, addD, dOff, diffD, esc, fmtDate, iso, parse } 
 import { ic, wsLogo } from '../core/icons.js';
 import { LABELS, PRIOS, PSTAT, STATUSES, TASK_COLORS } from '../core/constants.js';
 import { D, S, allTasks, canSee, me, mem, note, pColor, proj, task, visibleProjects } from '../core/store.js';
-import { av, avStack, prIcon, stIcon } from '../ui/helpers.js';
+import { av, avStack, pIcon, prIcon, stIcon } from '../ui/helpers.js';
 import { focusKey, render } from '../shell/render.js';
 import { FIELDS, viewOf } from '../shell/view-engine.js';
 import { startOfWeek } from '../views/calendar.js';
@@ -148,10 +148,10 @@ export function popHtml(p) {
       const curProj = p.id === '__form' ? S.ui.form?.project : t?.project;
       inner = popList(
         [
-          { id: '', name: 'Tanpa Proyek (Pengingat Pribadi)', html: ic('bell', 14), on: !curProj },
+          { id: '', name: 'Tanpa Proyek (Pengingat Pribadi)', html: ic('bell', 15), on: !curProj },
           ...visibleProjects()
             .filter(q => canSee(q) && q.status !== 'complete')
-            .map(q => ({ id: q.id, name: q.name, html: `<span class="pdot" style="--c:${pColor(q)}"></span>`, on: curProj === q.id })),
+            .map(q => ({ id: q.id, name: q.name, html: pIcon(q, 'sm'), on: curProj === q.id })),
         ],
         { search: 'Pilih proyek atau pengingat…' },
       );

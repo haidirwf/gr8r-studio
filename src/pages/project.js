@@ -6,8 +6,7 @@ import { ic } from '../core/icons.js';
 import { PSTAT } from '../core/constants.js';
 import { D, S, canSee, proj, tasksOf } from '../core/store.js';
 import { avStack, empty, pIcon } from '../ui/helpers.js';
-import { applyView, groupTasks, viewOf, viewToolbar } from '../shell/view-engine.js';
-import { listHtml } from '../components/task-list.js';
+import { applyView, viewOf, viewToolbar } from '../shell/view-engine.js';
 import { page404, stateDenied } from './errors.js';
 import { projActivity, projOverview } from '../views/project-overview.js';
 import { boardHtml } from '../views/board.js';
@@ -18,7 +17,6 @@ import { filesHtml } from '../views/files.js';
 export const PTABS = [
   ['overview', 'Overview', 'layout-dashboard'],
   ['board', 'Board', 'square-kanban'],
-  ['list', 'List', 'list'],
   ['calendar', 'Calendar', 'calendar'],
   ['timeline', 'Timeline', 'chart-gantt'],
   ['files', 'Files', 'paperclip'],
@@ -76,7 +74,6 @@ export function pageProject() {
   </div>`;
 }
 export function taskViewBody(type, ts, key, p) {
-  const v = viewOf(key);
   const addBtn = `<button class="btn btn-primary btn-sm" data-a="newTask" data-project="${p.id}">${ic('plus', 13)}New task</button>`;
   const noTasks = !tasksOf(p.id).length;
   const emptyAll = empty(
@@ -85,19 +82,8 @@ export function taskViewBody(type, ts, key, p) {
     'Add a task to get things moving.',
     `<button class="btn btn-primary btn-sm" data-a="newTask" data-project="${p.id}">${ic('plus', 14)}Add task</button>`,
   );
-  const emptyFilter = empty(
-    'search-x',
-    'No results found',
-    'No tasks match these filters.',
-    `<button class="btn btn-secondary btn-sm" data-a="clearFilters" data-key="${key}">Clear filters</button>`,
-  );
-  if (type === 'table') type = 'board';
+  if (type === 'table' || type === 'list') type = 'board';
   if (type === 'board') return viewToolbar(key, { group: false, right: addBtn }) + (noTasks ? emptyAll : boardHtml(ts, key, { project: p.id }));
-  if (type === 'list')
-    return (
-      viewToolbar(key, { right: addBtn }) +
-      `<div class="list-wrap">${noTasks ? emptyAll : !ts.length ? emptyFilter : listHtml(groupTasks(ts, v.group), key, { project: p.id })}</div>`
-    );
   if (type === 'calendar') return viewToolbar(key, { group: false, right: addBtn }) + calendarHtml(ts, { key, project: p.id, events: true });
   if (type === 'timeline') return viewToolbar(key, { group: false, right: addBtn, extra: tlControls(key) }) + timelineHtml(ts, key, p);
   return page404();

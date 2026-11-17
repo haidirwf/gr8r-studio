@@ -22,15 +22,31 @@
 .cal-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 4px 0 10px;
+  justify-content: flex-start;
+  gap: 16px;
+  padding: 8px 0 14px;
   border-bottom: 1px solid var(--border);
+  min-height: 44px;
 }
 .cal-nav-group {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.cal-label {
+  font-size: 19px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.015em;
+  color: var(--text);
+  white-space: nowrap;
+  line-height: 1;
+}
+.cal-nav-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 .cal-arrows-box {
   display: inline-flex;
@@ -39,6 +55,8 @@
   border-radius: var(--r-sm, 6px);
   background: var(--surface);
   overflow: hidden;
+  height: 32px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 .cal-arrow-btn {
   border: 0;
@@ -50,6 +68,7 @@
   place-items: center;
   cursor: pointer;
   transition: all var(--dur);
+  padding: 0;
 }
 .cal-arrow-btn:first-child {
   border-right: 1px solid var(--divider);
@@ -58,16 +77,15 @@
   background: var(--surface-hover);
   color: var(--text);
 }
-.cal-label {
-  font-size: var(--fs-lg);
-  font-weight: 700;
-  margin: 0;
-  letter-spacing: -0.01em;
-  color: var(--text);
-  white-space: nowrap;
-}
 .cal-today-btn {
+  height: 32px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-weight: 500;
+  font-size: 12.5px;
+  border-radius: var(--r-sm, 6px);
 }
 .cal-actions-group {
   display: flex;
@@ -406,21 +424,29 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding: 2px 0 8px;
+    padding: 4px 0 10px;
   }
   .cal-nav-group {
     display: flex;
     align-items: center;
-    gap: 8px;
-    width: auto;
-    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+    justify-content: space-between;
   }
   .cal-label {
-    font-size: var(--fs-base);
+    font-size: var(--fs-base, 15px);
+  }
+  .cal-nav-btns {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .cal-arrows-box {
+    height: 28px;
   }
   .cal-arrow-btn {
     width: 28px;
-    height: 28px;
+    height: 26px;
   }
   .cal-today-btn {
     padding: 0 8px;

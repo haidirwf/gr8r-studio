@@ -21,6 +21,7 @@ export function ctxMenu(p) {
       I('ctxAssign', 'user', 'Tugaskan ke…') +
       I('ctxPrio', 'signal-high', 'Ubah Prioritas…') +
       I('ctxMove', 'folder-input', 'Pindahkan ke Proyek…') +
+      I('ctxTaskColor', 'palette', 'Ganti Warna Tugas…') +
       sep +
       I('toggleFavTask', 'star', t.fav ? 'Hapus dari Favorit' : 'Tambah ke Favorit') +
       I('copyLink', 'link', 'Salin Tautan') +

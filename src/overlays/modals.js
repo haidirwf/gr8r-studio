@@ -1,7 +1,7 @@
 /* ---------------- MODALS ---------------- */
 import { $$, MOD, TODAY, ago, diffD, esc, fmtDate, parse } from '../core/utils.js';
 import { ic } from '../core/icons.js';
-import { PCOLORS, PICONS, PR, PROJECT_TAGS, ST } from '../core/constants.js';
+import { PCOLORS, PICONS, PR, PROJECT_TAGS, ST, TASK_COLORS } from '../core/constants.js';
 import { D, S, mem, pColor, proj, task, teamsList } from '../core/store.js';
 import { FT, av, filePrev, lbl, prIcon, prPill, stIcon, stPill } from '../ui/helpers.js';
 import { focusKey, render } from '../shell/render.js';
@@ -156,6 +156,16 @@ export function taskModal(m, H) {
       ${formChip('labels', f.labels.length ? f.labels.map(lbl).join('') : `${ic('tag', 13)}Labels`, 'Labels')}
       ${formChip('recur', `${ic('repeat', 13)}${f.recur || 'Repeat'}`, 'Repeat')}
     </div>
+    <div class="field" style="margin-top:2px">
+      <span class="label" style="font-size:12px;margin-bottom:4px">Warna Penanda Tugas</span>
+      <div class="swatches" style="display:flex;gap:7px;flex-wrap:wrap">
+        ${Object.entries(TASK_COLORS).map(([k, c]) => {
+          const bg = c.c || (p ? pColor(p) : 'var(--amber, #f59e0b)');
+          const isSelected = (f.color || 'default') === k;
+          return `<button type="button" class="sw ${isSelected ? 'on' : ''}" style="--c:${bg};width:22px;height:22px;border-radius:50%;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;background:${bg};border:2px solid ${isSelected ? 'var(--text)' : 'transparent'};box-shadow:0 0 0 1px var(--border)" data-a="formSetColor" data-c="${k}" title="${c.name}">${isSelected ? ic('check', 11) : ''}</button>`;
+        }).join('')}
+      </div>
+    </div>
     <div class="field"><span class="label">Subtasks</span>
       ${f.subtasks.map((s, i) => `<div class="subt" style="padding:0 4px">${ic('circle', 13)}<span class="s">${esc(s.title)}</span><button type="button" class="ibtn ibtn-xs x" style="opacity:1" data-a="formRmSub" data-i="${i}" aria-label="Remove">${ic('x', 12)}</button></div>`).join('')}
       <div class="inwrap">${ic('plus', 14)}<input class="input" id="f-sub" data-key-enter="formAddSub" placeholder="Add a subtask and press Enter"></div></div>
@@ -245,6 +255,19 @@ export function quickTaskModal(m, H) {
         ${p ? `<span class="pdot" style="--c:${pColor(p)}"></span><span>${esc(p.name)}</span>` : `${ic('bell', 13)}<span>Pengingat Pribadi</span>`}
         ${ic('chevron-down', 11)}
       </button>
+    </div>
+
+    <div class="row" style="gap:8px;align-items:center;padding:4px 0">
+      <span class="faint" style="font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:4px">
+        ${ic('palette', 12)}<span>Warna:</span>
+      </span>
+      <div class="swatches" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        ${Object.entries(TASK_COLORS).map(([k, c]) => {
+          const bg = c.c || (p ? pColor(p) : 'var(--amber, #f59e0b)');
+          const isSelected = (t.color || 'default') === k;
+          return `<button type="button" class="sw ${isSelected ? 'on' : ''}" style="--c:${bg};width:18px;height:18px;border-radius:50%;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;background:${bg};border:2px solid ${isSelected ? 'var(--text)' : 'transparent'};box-shadow:0 0 0 1px var(--border)" data-a="setTaskColor" data-id="${t.id}" data-c="${k}" title="${c.name}">${isSelected ? ic('check', 10) : ''}</button>`;
+        }).join('')}
+      </div>
     </div>
 
     <div class="field" style="margin-bottom:0">
@@ -343,10 +366,10 @@ export function projectModal(m, H) {
     <div class="field" style="border-top:1px solid var(--divider);padding-top:14px;margin-top:4px;min-width:0">
       <span class="label" style="font-weight:600;color:var(--text);font-size:13px">Tautan Proyek</span>
       <div class="col" style="gap:8px;margin-top:6px;min-width:0">
-        <div class="field" style="min-width:0"><label class="label" for="p-link-guidebook" style="font-size:12px">📖 Buku Panduan</label><input class="input" id="p-link-guidebook" placeholder="https://drive.google.com/..." value="${esc(f.guidebook || '')}" autocapitalize="off" autocorrect="off"></div>
-        <div class="field" style="min-width:0"><label class="label" for="p-link-submission" style="font-size:12px">📤 Formulir Pengumpulan</label><input class="input" id="p-link-submission" placeholder="https://forms.gle/..." value="${esc(f.submission || '')}" autocapitalize="off" autocorrect="off"></div>
-        <div class="field" style="min-width:0"><label class="label" for="p-link-group" style="font-size:12px">💬 Grup Koordinasi</label><input class="input" id="p-link-group" placeholder="https://chat.whatsapp.com/..." value="${esc(f.group || '')}" autocapitalize="off" autocorrect="off"></div>
-        <div class="field" style="min-width:0"><label class="label" for="p-link-social" style="font-size:12px">📸 Media Sosial Panitia</label><input class="input" id="p-link-social" placeholder="https://instagram.com/..." value="${esc(f.social || '')}" autocapitalize="off" autocorrect="off"></div>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-guidebook" style="font-size:12px">📖 Buku Panduan</label><input class="input" id="p-link-guidebook" data-in="pform" data-f="guidebook" placeholder="https://drive.google.com/..." value="${esc(f.guidebook || '')}" autocapitalize="off" autocorrect="off"></div>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-submission" style="font-size:12px">📤 Formulir Pengumpulan</label><input class="input" id="p-link-submission" data-in="pform" data-f="submission" placeholder="https://forms.gle/..." value="${esc(f.submission || '')}" autocapitalize="off" autocorrect="off"></div>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-group" style="font-size:12px">💬 Grup Koordinasi</label><input class="input" id="p-link-group" data-in="pform" data-f="group" placeholder="https://chat.whatsapp.com/..." value="${esc(f.group || '')}" autocapitalize="off" autocorrect="off"></div>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-social" style="font-size:12px">📸 Media Sosial Panitia</label><input class="input" id="p-link-social" data-in="pform" data-f="social" placeholder="https://instagram.com/..." value="${esc(f.social || '')}" autocapitalize="off" autocorrect="off"></div>
       </div>
     </div>
   </form>

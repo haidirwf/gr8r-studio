@@ -226,12 +226,12 @@ export function settingsBody(sec, title) {
           sel(
             'defaultTab',
             [
+              ['overview', 'Overview'],
               ['board', 'Board'],
               ['list', 'List'],
-              ['overview', 'Overview'],
               ['timeline', 'Timeline'],
             ],
-            (P.defaultTab === 'table' ? 'board' : P.defaultTab) || 'board',
+            P.defaultTab || 'overview',
           ),
         ) +
         srow('Show completed tasks on boards', '', tog('showDoneBoard', P.showDoneBoard !== false)) +

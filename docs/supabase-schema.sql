@@ -86,6 +86,7 @@ alter table public.tasks add constraint tasks_priority_check check (priority in 
 alter table public.tasks add column if not exists archived boolean default false not null;
 alter table public.tasks add column if not exists archived_at timestamptz;
 alter table public.tasks alter column task_order type numeric;
+alter table public.tasks add column if not exists color text;
 
 -- ------------------------------------------------------------------------------
 -- 4. TABEL: NOTES

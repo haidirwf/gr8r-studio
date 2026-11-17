@@ -372,11 +372,33 @@ async function upsertProjectsWithFallback(rows) {
   return { error };
 }
 
+/**
+ * Upsert tasks dengan fallback cerdas jika kolom 'color' belum ada di database Supabase
+ */
+async function upsertTasksWithFallback(rows) {
+  const isArray = Array.isArray(rows);
+  const data = isArray ? rows : [rows];
+  const { error } = await supabase.from('tasks').upsert(data);
+  if (error && (error.code === '42703' || String(error.message).includes('color'))) {
+    const fallbackRows = data.map(r => {
+      const copy = { ...r };
+      delete copy.color;
+      return copy;
+    });
+    return await supabase.from('tasks').upsert(isArray ? fallbackRows : fallbackRows[0]);
+  }
+  return { error };
+}
+
 export function mapTaskToRow(t, userId) {
   const id = isUuid(t.id) ? t.id : (t.id = uuid());
   const validStatuses = ['backlog', 'todo', 'progress', 'review', 'done'];
   const validPriorities = ['urgent', 'high', 'medium', 'low', 'none'];
   const projId = t.project && isUuid(t.project) ? t.project : null;
+  const rawLabels = Array.isArray(t.labels) ? t.labels.filter(l => !String(l).startsWith('__color:')) : [];
+  if (t.color) {
+    rawLabels.push(`__color:${t.color}`);
+  }
   return {
     id: String(id),
     user_id: userId,
@@ -387,7 +409,7 @@ export function mapTaskToRow(t, userId) {
     priority: validPriorities.includes(t.priority) ? t.priority : 'medium',
     due: t.due ? new Date(t.due).toISOString() : null,
     start_date: t.start ? new Date(t.start).toISOString() : null,
-    labels: Array.isArray(t.labels) ? t.labels : [],
+    labels: rawLabels,
     subtasks: Array.isArray(t.subtasks) ? t.subtasks : [],
     fav: Boolean(t.fav),
     archived: Boolean(t.archived),
@@ -395,10 +417,15 @@ export function mapTaskToRow(t, userId) {
       ? (typeof t.archivedAt === 'number' ? new Date(t.archivedAt).toISOString() : t.archivedAt)
       : (t.archived ? new Date().toISOString() : null),
     task_order: typeof t.order === 'number' ? t.order : 0,
+    color: t.color || null,
   };
 }
 
 export function mapRowToTask(row) {
+  const rawLabels = Array.isArray(row.labels) ? row.labels : [];
+  const colorTag = rawLabels.find(l => typeof l === 'string' && l.startsWith('__color:'));
+  const colorFromLabels = colorTag ? colorTag.slice(8) : null;
+  const cleanLabels = rawLabels.filter(l => !(typeof l === 'string' && l.startsWith('__color:')));
   return {
     id: row.id,
     key: `TSK-${String(row.id).slice(-4)}`,
@@ -409,7 +436,8 @@ export function mapRowToTask(row) {
     priority: row.priority || 'medium',
     due: row.due ? row.due.slice(0, 10) : null,
     start: row.start_date ? row.start_date.slice(0, 10) : null,
-    labels: Array.isArray(row.labels) ? row.labels : [],
+    labels: cleanLabels,
+    color: row.color || colorFromLabels || null,
     subtasks: Array.isArray(row.subtasks) ? row.subtasks : [],
     fav: Boolean(row.fav),
     archived: Boolean(row.archived),
@@ -517,7 +545,7 @@ export async function saveTaskToCloud(task) {
     const user = await getCurrentUser();
     if (!user) return;
     const row = mapTaskToRow(task, user.id);
-    const { error } = await supabase.from('tasks').upsert(row);
+    const { error } = await upsertTasksWithFallback([row]);
     if (error) {
       console.error('[Supabase] Gagal menyimpan tugas langsung:', error);
     }
@@ -644,7 +672,7 @@ export async function flushCloudSync(data = null, prefs = null) {
     if (targetData.tasks && targetData.tasks.length) {
       const rows = targetData.tasks.map(t => mapTaskToRow(t, user.id));
       upserts.push(
-        supabase.from('tasks').upsert(rows).then(({ error }) => {
+        upsertTasksWithFallback(rows).then(({ error }) => {
           if (error) console.error('[Supabase] Gagal upsert tasks:', error);
         })
       );

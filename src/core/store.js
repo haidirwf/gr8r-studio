@@ -1,6 +1,6 @@
 /* ---------- store ---------- */
 import { TODAY, diffD, iso, parse, uid } from './utils.js';
-import { PCOLORS, TEAMS_SEED } from './constants.js';
+import { PCOLORS, TASK_COLORS, TEAMS_SEED } from './constants.js';
 import { scheduleCloudSync, saveActivityToCloud } from './supabase.js';
 
 export const STORE_KEY = 'gr8r.v5';
@@ -16,6 +16,7 @@ export const DEFAULT_PREFS = {
   motion: 'system',
   home: 'projects',
   openTasks: 'drawer',
+  defaultTab: 'overview',
   name: '',
   title: 'Pelajar',
 };
@@ -287,6 +288,11 @@ export const task = id => D().tasks?.find(t => t.id === id);
 export const allNotes = () => (D().notes || (D().notes = []));
 export const note = id => allNotes().find(n => n.id === id);
 export const pColor = p => PCOLORS[p?.color] || PCOLORS.slate;
+export const taskColor = t => {
+  if (t?.color && TASK_COLORS[t.color]?.c) return TASK_COLORS[t.color].c;
+  const p = proj(t?.project);
+  return p ? pColor(p) : 'var(--amber, #f59e0b)';
+};
 export const visibleProjects = () =>
   (D().projects || [])
     .filter(p => !p.archived);

@@ -42,6 +42,7 @@ import {
   getSession,
   fetchAllUserData,
   saveProjectToCloud,
+  saveTaskToCloud,
   flushCloudSync,
   deleteProjectFromCloud,
   deleteTaskFromCloud,
@@ -206,7 +207,7 @@ A.go = el => {
   const p = {};
   if (el.dataset.id) p.id = el.dataset.id;
   if (el.dataset.tab) p.tab = el.dataset.tab;
-  else if (r === 'project') p.tab = (S.prefs.defaultTab === 'table' ? 'board' : S.prefs.defaultTab) || 'board';
+  else if (r === 'project') p.tab = S.prefs.defaultTab || 'overview';
   if (el.dataset.sec) p.sec = el.dataset.sec;
   S.ui.palette = null;
   const tabOnly = r === 'project' && S.ui.route === 'project' && S.ui.params.id === p.id;
@@ -220,7 +221,7 @@ A.back = () => {
   }
 };
 A.reload = () => render();
-A.openProject = el => go('project', { id: el.dataset.id, tab: (S.prefs.defaultTab === 'table' ? 'board' : S.prefs.defaultTab) || 'board' });
+A.openProject = el => go('project', { id: el.dataset.id, tab: S.prefs.defaultTab || 'overview' });
 A.set = el => {
   const k = el.dataset.k;
   let v = el.dataset.v;
@@ -411,6 +412,28 @@ A.ctxAssign = ctxTo('assignee');
 A.ctxPrio = ctxTo('priority');
 A.ctxMove = ctxTo('project');
 A.ctxRole = ctxTo('role');
+A.ctxTaskColor = ctxTo('taskColor');
+
+A.setTaskColor = el => {
+  const id = el.dataset.id;
+  const c = el.dataset.c;
+  const t = task(id);
+  if (!t) return;
+  mutate(() => {
+    t.color = c === 'default' ? null : c;
+  });
+  if (S.ui.pop?.type === 'taskColor') S.ui.pop = null;
+  saveTaskToCloud(t);
+  flushCloudSync();
+  render();
+  toast('Warna tugas diperbarui');
+};
+
+A.formSetColor = el => {
+  if (!S.ui.form) return;
+  S.ui.form.color = el.dataset.c;
+  render();
+};
 
 /* ---------- tasks ---------- */
 A.openTask = el => {
@@ -580,6 +603,7 @@ A.editTask = el => {
     subtasks: t.subtasks.map(s => ({ ...s })),
     files: [],
     recur: t.recur,
+    color: t.color || 'default',
     more: false,
   };
   S.ui.errors = {};
@@ -604,6 +628,7 @@ A.newTask = el => {
     subtasks: [],
     files: [],
     recur: null,
+    color: 'default',
     more: S.ui.form?.more || false,
   };
   S.ui.errors = {};
@@ -684,6 +709,7 @@ A.submitTask = () => {
     labels: f.labels,
     recur: f.recur,
     subtasks: f.subtasks,
+    color: f.color && f.color !== 'default' ? f.color : null,
   };
   if (m.edit) {
     const t = task(m.edit);
@@ -1366,7 +1392,7 @@ A.newCalProject = el => {
 A.goProjectFromTask = el => {
   const pid = el.dataset.id;
   closeModal();
-  if (pid) go('project', { id: pid, tab: 'board' });
+  if (pid) go('project', { id: pid, tab: S.prefs.defaultTab || 'overview' });
 };
 A.deleteQuickTask = el => {
   const id = el.dataset.id;
@@ -1425,7 +1451,26 @@ A.editProject = el => {
   S.ui.errors = {};
   openModal({ type: 'project', edit: p.id });
 };
+export function syncPformFromDom() {
+  const f = S.ui.pform;
+  if (!f) return;
+  const nameEl = $('#p-name');
+  if (nameEl) f.name = nameEl.value;
+  const descEl = $('#p-desc');
+  if (descEl) f.desc = descEl.value;
+  const dueEl = $('#p-due');
+  if (dueEl) f.due = dueEl.value;
+  const gbEl = $('#p-link-guidebook');
+  if (gbEl) f.guidebook = gbEl.value;
+  const subEl = $('#p-link-submission');
+  if (subEl) f.submission = subEl.value;
+  const grpEl = $('#p-link-group');
+  if (grpEl) f.group = grpEl.value;
+  const socEl = $('#p-link-social');
+  if (socEl) f.social = socEl.value;
+}
 IN.pformImageUpload = async el => {
+  syncPformFromDom();
   const file = el.files && el.files[0];
   if (!file) return;
   try {
@@ -1439,6 +1484,7 @@ IN.pformImageUpload = async el => {
   }
 };
 A.pformClearImage = () => {
+  syncPformFromDom();
   S.ui.pform.image = null;
   render();
 };
@@ -1510,6 +1556,7 @@ IN.pform = el => {
   }
 };
 A.pformSet = el => {
+  syncPformFromDom();
   S.ui.pform[el.dataset.f] = el.dataset.v;
   if (el.dataset.f === 'tmpl') {
     const t = TEMPLATES.find(x => x.id === el.dataset.v);
@@ -1573,6 +1620,7 @@ export function createProject(f, tmplId) {
   return p;
 }
 IN.pformTagSelect = el => {
+  syncPformFromDom();
   if (el.value === '__custom__') {
     const val = prompt('Masukkan nama tag proyek baru:');
     if (val && val.trim()) {
@@ -1586,10 +1634,11 @@ IN.pformTagSelect = el => {
   render();
 };
 A.submitProject = () => {
+  syncPformFromDom();
   const m = S.ui.modals[S.ui.modals.length - 1];
   const f = S.ui.pform;
-  f.name = ($('#p-name')?.value || '').trim();
-  f.desc = $('#p-desc')?.value || '';
+  f.name = ($('#p-name')?.value || f.name || '').trim();
+  f.desc = $('#p-desc')?.value || f.desc || '';
   if (!f.name) {
     S.ui.errors.pname = 'Beri nama untuk proyek';
     render();
@@ -1597,10 +1646,10 @@ A.submitProject = () => {
     return;
   }
 
-  const gbUrl = ($('#p-link-guidebook')?.value || '').trim();
-  const subUrl = ($('#p-link-submission')?.value || '').trim();
-  const grpUrl = ($('#p-link-group')?.value || '').trim();
-  const socUrl = ($('#p-link-social')?.value || '').trim();
+  const gbUrl = (f.guidebook || $('#p-link-guidebook')?.value || '').trim();
+  const subUrl = (f.submission || $('#p-link-submission')?.value || '').trim();
+  const grpUrl = (f.group || $('#p-link-group')?.value || '').trim();
+  const socUrl = (f.social || $('#p-link-social')?.value || '').trim();
 
   const collectedLinks = [];
   if (gbUrl) collectedLinks.push({ id: uid('l'), type: 'guidebook', label: 'Buku Panduan', url: gbUrl.startsWith('http') ? gbUrl : 'https://' + gbUrl });
@@ -1625,7 +1674,7 @@ A.submitProject = () => {
           due: f.due,
           tags: Array.isArray(f.tags) ? [...f.tags] : [],
           members: [...new Set([...p.members, f.lead])],
-          links: collectedLinks.length ? collectedLinks : p.links || [],
+          links: collectedLinks,
         }),
       )
     ) {

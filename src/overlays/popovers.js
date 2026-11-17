@@ -1,7 +1,7 @@
 /* ---------------- POPOVERS ---------------- */
 import { $, MOD, MONL, TODAY, WD, addD, dOff, diffD, esc, fmtDate, iso, parse } from '../core/utils.js';
 import { ic, wsLogo } from '../core/icons.js';
-import { LABELS, PRIOS, PSTAT, STATUSES } from '../core/constants.js';
+import { LABELS, PRIOS, PSTAT, STATUSES, TASK_COLORS } from '../core/constants.js';
 import { D, S, allTasks, canSee, me, mem, note, pColor, proj, task, visibleProjects } from '../core/store.js';
 import { av, avStack, prIcon, stIcon } from '../ui/helpers.js';
 import { focusKey, render } from '../shell/render.js';
@@ -366,6 +366,21 @@ export function popHtml(p) {
         )
         .join('')}</div>`;
       style = 'min-width:0';
+      break;
+    }
+    case 'taskColor': {
+      const t = task(p.id);
+      const pr = proj(t?.project);
+      const curColor = t?.color || 'default';
+      inner = `<div class="mh" style="font-weight:600;font-size:12px;color:var(--text)">Warna Penanda Tugas</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;padding:8px 10px;max-width:210px">
+          ${Object.entries(TASK_COLORS).map(([k, c]) => {
+            const bg = c.c || (pr ? pColor(pr) : 'var(--amber, #f59e0b)');
+            const on = curColor === k;
+            return `<button class="sw ${on ? 'on' : ''}" style="--c:${bg};width:24px;height:24px;border-radius:50%;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;background:${bg};border:2px solid ${on ? 'var(--text)' : 'transparent'};box-shadow:0 0 0 1px var(--border)" data-a="setTaskColor" data-id="${p.id}" data-c="${k}" title="${c.name}">${on ? ic('check', 11) : ''}</button>`;
+          }).join('')}
+        </div>`;
+      style = 'width:216px';
       break;
     }
     case 'ctx':

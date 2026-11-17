@@ -1,7 +1,7 @@
 /* ---------- TIMELINE ---------- */
 import { $, MON, MONL, TODAY, addD, diffD, esc, fmtDate, parse } from '../core/utils.js';
 import { ic } from '../core/icons.js';
-import { S, allTasks, canSee, pColor, proj, task, taskProg, visibleProjects } from '../core/store.js';
+import { S, allTasks, canSee, pColor, proj, task, taskColor, taskProg, visibleProjects } from '../core/store.js';
 import { av, empty, stIcon } from '../ui/helpers.js';
 import { applyView, groupTasks, viewOf, viewToolbar } from '../shell/view-engine.js';
 import { startOfWeek } from './calendar.js';
@@ -91,7 +91,7 @@ export function timelineHtml(ts, key, p) {
       const s = t.start && t.start <= t.due ? t.start : t.due;
       const x = X(s);
       const w = Math.max(dw, (diffD(parse(t.due), parse(s)) + 1) * dw);
-      const c = g === 'status' || g === 'none' ? pColor(pp) : `var(--st-${t.status})`;
+      const c = t.color ? taskColor(t) : (g === 'status' || g === 'none' ? pColor(pp) : `var(--st-${t.status})`);
       const inside = w > 110;
       return `<div class="tl-rowbg" style="top:${y}px"></div><div class="bar ${t.status === 'done' ? 'done' : ''}" style="--c:${c};left:${x}px;top:${y + 7}px;width:${w}px" data-bar="${t.id}" data-dw="${dw}" data-a="openTask" data-id="${t.id}" data-ctx="task" title="${esc(t.title)} · ${fmtDate(s)} → ${fmtDate(t.due)}"><span class="pf" style="width:${taskProg(t)}%"></span>${inside ? `${av(t.assignee, 'sm', false)}<span class="trunc">${esc(t.title)}</span>` : ''}</div>${inside ? '' : `<div class="bar-lbl" style="left:${x + w + 8}px;top:${y + 10}px">${esc(t.title)}</div>`}`;
     })

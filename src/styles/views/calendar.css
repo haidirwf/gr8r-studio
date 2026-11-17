@@ -456,11 +456,12 @@
   }
 
   .cal {
-    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+    -webkit-overflow-scrolling: touch;
   }
   .cal-day-agenda {
     padding: 14px 16px;
-    margin-bottom: 20px;
+    margin-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
   }
   .cal-agenda-date {
     font-size: var(--fs-base);

@@ -62,7 +62,7 @@ export function routeToHash(route, params = {}) {
   if (S.ui.auth) return `#/${S.ui.auth}`;
   if (route === 'project') {
     const id = params.id || '';
-    const tab = params.tab || 'board';
+    const tab = params.tab || S.prefs.defaultTab || 'overview';
     return `#/project/${id}/${tab}`;
   }
   if (params.id) {
@@ -84,7 +84,7 @@ export function parseHash(hashStr) {
   if (r === 'project') {
     return {
       route: 'project',
-      params: { id: parts[1] || '', tab: parts[2] || 'board' },
+      params: { id: parts[1] || '', tab: parts[2] || S.prefs.defaultTab || 'overview' },
     };
   }
   if (ROUTE_NAMES[r]) {
@@ -99,7 +99,7 @@ export const isSyncingHash = () => _syncingHash;
 
 export function go(route, params = {}, opt = {}) {
   if (route === 'mytasks') route = 'calendar';
-  if (route === 'project' && !params.tab) params.tab = 'board';
+  if (route === 'project' && !params.tab) params.tab = S.prefs.defaultTab || 'overview';
   if (!opt.back) S.ui.history.push({ route: S.ui.route, params: S.ui.params });
   const same = S.ui.route === route && JSON.stringify(S.ui.params) === JSON.stringify(params);
   S.ui.route = route;

@@ -2,7 +2,7 @@
 import { esc } from '../core/utils.js';
 import { ic } from '../core/icons.js';
 import { PR, STATUSES } from '../core/constants.js';
-import { S, commentsOf, pColor, proj } from '../core/store.js';
+import { S, commentsOf, pColor, proj, taskColor } from '../core/store.js';
 import { av, dueHtml, lbl, prIcon, progBar, stIcon } from '../ui/helpers.js';
 import { fxc } from '../shell/render.js';
 
@@ -11,7 +11,9 @@ export function kcard(t, opt = {}) {
   const ac = t.attachments.length;
   const sd = t.subtasks.filter(s => s.done).length;
   const p = proj(t.project);
-  return `<div class="kcard ${t.status === 'done' ? 'done' : ''}${fxc('done', t.id)}${fxc('added', t.id)}${fxc('moved', t.id)}" draggable="true" data-drag-card="${t.id}" data-a="openTask" data-id="${t.id}" data-ctx="task" role="button" tabindex="0" aria-label="${esc(t.title)}">
+  const tc = taskColor(t);
+  return `<div class="kcard ${t.status === 'done' ? 'done' : ''}${fxc('done', t.id)}${fxc('added', t.id)}${fxc('moved', t.id)}" style="--c:${tc}" draggable="true" data-drag-card="${t.id}" data-a="openTask" data-id="${t.id}" data-ctx="task" role="button" tabindex="0" aria-label="${esc(t.title)}">
+    ${t.color ? `<div style="height:3px;border-radius:2px;background:${tc};margin-bottom:6px"></div>` : ''}
     ${t.labels.length ? `<div class="labels">${t.labels.map(lbl).join('')}</div>` : ''}
     <div class="top">${t.status === 'done' ? `<span class="done-ic" style="margin:2px 7px 0 0;display:inline-flex" aria-label="Done">${stIcon('done', 14)}</span>` : ''}<div class="title">${esc(t.title)}</div></div>
     ${t.subtasks.length ? `<div class="subp">${ic('list-checks', 12)}<span class="num">${sd}/${t.subtasks.length}</span>${progBar(Math.round((sd / t.subtasks.length) * 100), sd === t.subtasks.length ? 'green' : '')}</div>` : ''}

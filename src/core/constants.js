@@ -43,6 +43,19 @@ export const PCOLORS = {
   green: '#3D8E5F',
   slate: '#6B7280',
 };
+export const TASK_COLORS = {
+  default: { name: 'Default', c: '' },
+  indigo: { name: 'Indigo', c: '#6366f1' },
+  blue: { name: 'Biru', c: '#3b82f6' },
+  cyan: { name: 'Cyan', c: '#06b6d4' },
+  teal: { name: 'Teal', c: '#14b8a6' },
+  emerald: { name: 'Hijau', c: '#10b981' },
+  amber: { name: 'Amber', c: '#f59e0b' },
+  orange: { name: 'Oranye', c: '#f97316' },
+  rose: { name: 'Rose', c: '#f43f5e' },
+  purple: { name: 'Ungu', c: '#a855f7' },
+  pink: { name: 'Pink', c: '#ec4899' },
+};
 export const PICONS = [
   'globe',
   'smartphone',

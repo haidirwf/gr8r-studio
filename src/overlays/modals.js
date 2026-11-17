@@ -311,10 +311,20 @@ export function projectModal(m, H) {
   const err = S.ui.errors.pname;
   return `${H(m.edit ? 'Pengaturan Proyek' : 'Tambah Proyek Baru', m.edit ? '' : 'Kelola timeline dan kebutuhan proyek Anda.')}
   <form class="modal-b" data-submit="submitProject" style="gap:14px;overflow-x:hidden;max-width:100%;box-sizing:border-box">
-    <div class="row" style="gap:10px;align-items:flex-start;min-width:0">
-      <button type="button" class="picon lg ${f.image ? 'picon-has-img' : ''}" style="--c:${PCOLORS[f.color]};cursor:default;flex-shrink:0;margin-top:22px;overflow:hidden" aria-hidden="true" tabindex="-1">
-        ${f.image ? `<img src="${f.image}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" />` : ic(f.icon, 18)}
-      </button>
+    <div class="row" style="gap:12px;align-items:flex-start;min-width:0">
+      <div class="picon-upload-wrap">
+        <label class="picon lg ${f.image ? 'picon-has-img' : ''}" style="--c:${PCOLORS[f.color]};overflow:hidden;position:relative" title="${f.image ? 'Klik untuk ganti logo/gambar' : 'Upload logo/gambar proyek'}" aria-label="Upload logo atau gambar">
+          ${f.image
+            ? `<img src="${f.image}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" />`
+            : ic(f.icon, 20)
+          }
+          <div class="picon-upload-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;color:#fff;opacity:0;transition:opacity var(--dur)">
+            ${ic('camera', 16)}
+          </div>
+          <input type="file" accept="image/*" hidden data-in="pformImageUpload">
+        </label>
+        ${f.image ? `<button type="button" class="picon-del-btn" data-a="pformClearImage" title="Hapus gambar" aria-label="Hapus gambar">${ic('x', 11)}</button>` : ''}
+      </div>
       <div class="field grow" style="min-width:0"><label class="label" for="p-name">Nama Proyek</label><input class="input ${err ? 'is-error' : ''}" id="p-name" data-in="pform" data-f="name" value="${esc(f.name)}" placeholder="Contoh: Lomba Web Design 2026" autofocus aria-invalid="${!!err}">${err ? `<span class="err">${ic('circle-alert', 12)}${err}</span>` : ''}</div>
     </div>
     <div class="field" style="min-width:0"><label class="label" for="p-desc">Deskripsi Singkat</label><textarea class="textarea" id="p-desc" data-in="pform" data-f="desc" rows="2" placeholder="Deskripsi singkat proyek...">${esc(f.desc)}</textarea></div>
@@ -330,25 +340,6 @@ export function projectModal(m, H) {
           ${[...new Set([...PROJECT_TAGS, ...(f.tags || [])])].map(t => `<option value="${esc(t)}" ${(f.tags || ['Webdev']).includes(t) ? 'selected' : ''}>${esc(t)}</option>`).join('')}
           <option value="__custom__">+ Tambah Tag Lain...</option>
         </select>
-      </div>
-    </div>
-    
-    <div class="field" style="min-width:0">
-      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:4px">
-        <span class="label" style="margin-bottom:0">Ikon Gambar / Logo (WebP)</span>
-        ${f.image ? `<button type="button" class="btn btn-xs btn-ghost text-danger" data-a="pformClearImage" style="padding:2px 6px;height:auto">${ic('trash-2', 12)}<span>Hapus Gambar</span></button>` : ''}
-      </div>
-      <div class="row" style="gap:12px;align-items:center;background:var(--sunken);padding:10px 12px;border-radius:var(--r);border:1px solid var(--border)">
-        <div style="width:44px;height:44px;border-radius:8px;background:var(--surface);border:1px dashed var(--border-strong);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
-          ${f.image ? `<img src="${f.image}" alt="Logo" style="width:100%;height:100%;object-fit:cover;display:block" />` : `<span class="picon" style="--c:${PCOLORS[f.color]}">${ic(f.icon, 18)}</span>`}
-        </div>
-        <div class="grow" style="min-width:0">
-          <label class="btn btn-sm btn-secondary" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px">
-            ${ic('upload', 13)}<span>${f.image ? 'Ganti Logo / Gambar' : 'Upload Logo Lomba / Proyek'}</span>
-            <input type="file" accept="image/*" hidden data-in="pformImageUpload">
-          </label>
-          <div class="faint" style="font-size:11.5px;margin-top:4px">Gambar otomatis dikrop persegi & dikonversi ke WebP.</div>
-        </div>
       </div>
     </div>
 

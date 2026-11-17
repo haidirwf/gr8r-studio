@@ -40,17 +40,19 @@ export function projectCard(p) {
 
   return `<div class="pcard" data-a="go" data-r="project" data-id="${p.id}" data-ctx="project" role="link" tabindex="0" aria-label="${esc(p.name)}">
     <div class="pcard-header">
-      <div class="row" style="gap:10px;min-width:0;flex:1">
-        ${pIcon(p)}
+      <div class="row" style="gap:14px;min-width:0;flex:1;align-items:center">
+        ${pIcon(p, 'xl')}
         <div class="grow" style="min-width:0">
-          <div class="row" style="gap:6px">
-            <b class="trunc" style="font-weight:600;font-size:14px">${esc(p.name)}</b>
-            ${p.fav ? `<span style="color:var(--amber);flex-shrink:0">${ic('star', 12)}</span>` : ''}
-            ${p.private ? `<span class="faint" style="flex-shrink:0" data-tip="Private project">${ic('lock', 12)}</span>` : ''}
+          <div class="row" style="gap:6px;align-items:center">
+            <span class="trunc pcard-title" title="${esc(p.name)}">${esc(p.name)}</span>
+            ${p.fav ? `<span style="color:var(--amber);flex-shrink:0">${ic('star', 13)}</span>` : ''}
+            ${p.private ? `<span class="faint" style="flex-shrink:0" data-tip="Private project">${ic('lock', 13)}</span>` : ''}
+          </div>
+          <div style="margin-top:4px">
+            ${pStatus(p.status)}
           </div>
         </div>
       </div>
-      ${pStatus(p.status)}
     </div>
 
     <div class="desc">${esc(p.desc || 'Tidak ada deskripsi proyek.')}</div>
@@ -119,7 +121,7 @@ export function pageProjects() {
       .map(p => {
         const pr = progressOf(p.id);
         const tagsHtml = (p.tags || []).map(t => `<span class="badge" style="font-size:10.5px;padding:0 5px">${esc(t)}</span>`).join('');
-        return `<div class="mini" style="min-height:52px;gap:12px" data-a="go" data-r="project" data-id="${p.id}" data-ctx="project">${pIcon(p)}<div class="grow" style="min-width:0"><div class="row" style="gap:6px"><b style="font-weight:500">${esc(p.name)}</b>${p.private ? ic('lock', 12) : ''}${tagsHtml}</div><div class="trunc faint" style="font-size:12px">${esc(p.desc)}</div></div><span class="hide-m">${pStatus(p.status)}</span><span class="row hide-m" style="width:140px">${progBar(pr)}<span class="num faint" style="font-size:11.5px">${pr}%</span></span><span class="num muted hide-m" style="width:70px;font-size:12px">${fmtDate(p.due)}</span><button class="ibtn ibtn-sm" data-a="ctxBtn" data-ctx="project" data-id="${p.id}" aria-label="Options">${ic('ellipsis', 14)}</button></div>`;
+        return `<div class="mini" style="min-height:58px;gap:14px;padding:8px 12px" data-a="go" data-r="project" data-id="${p.id}" data-ctx="project">${pIcon(p, 'lg')}<div class="grow" style="min-width:0"><div class="row" style="gap:8px;align-items:center"><b style="font-weight:600;font-size:15px;color:var(--text)">${esc(p.name)}</b>${p.private ? ic('lock', 12) : ''}${tagsHtml}</div><div class="trunc faint" style="font-size:12px;margin-top:2px">${esc(p.desc)}</div></div><span class="hide-m">${pStatus(p.status)}</span><span class="row hide-m" style="width:140px">${progBar(pr)}<span class="num faint" style="font-size:11.5px">${pr}%</span></span><span class="num muted hide-m" style="width:70px;font-size:12px">${fmtDate(p.due)}</span><button class="ibtn ibtn-sm" data-a="ctxBtn" data-ctx="project" data-id="${p.id}" aria-label="Options">${ic('ellipsis', 14)}</button></div>`;
       })
       .join('')}</div>`;
   else

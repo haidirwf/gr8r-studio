@@ -10,10 +10,10 @@
 .pcard {
   border: 1px solid var(--border);
   border-radius: var(--r-lg, 12px);
-  padding: 16px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   cursor: pointer;
   background: var(--surface);
   transition:
@@ -27,14 +27,22 @@
 }
 .pcard:hover {
   border-color: var(--border-strong);
-  box-shadow: 0 6px 20px -6px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
 }
 .pcard-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
-  min-height: 32px;
+  gap: 12px;
+  min-height: 48px;
+}
+.pcard-title {
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+  letter-spacing: -0.015em;
 }
 .pcard .desc {
   font-size: var(--fs-sm);
@@ -138,14 +146,28 @@
   background: color-mix(in srgb, var(--c) 14%, transparent);
   color: var(--pc, var(--c));
   flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+.picon.sm {
+  --sz: 22px;
+  border-radius: 6px;
+}
+.picon.md {
+  --sz: 32px;
+  border-radius: 8px;
 }
 .picon.lg {
-  --sz: 36px;
-  border-radius: 9px;
+  --sz: 40px;
+  border-radius: 10px;
+}
+.picon.xl {
+  --sz: 50px;
+  border-radius: 12px;
 }
 .picon.picon-has-img {
   background: transparent;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), inset 0 0 0 1px var(--border);
 }
 .picon.picon-has-img .picon-img {
   width: 100%;

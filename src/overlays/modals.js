@@ -299,8 +299,8 @@ export function quickTaskModal(m, H) {
   <div class="modal-f" style="justify-content:space-between">
     <button class="btn btn-ghost btn-sm text-danger" data-a="deleteQuickTask" data-id="${t.id}">${ic('trash-2', 14)}<span>Hapus</span></button>
     <div class="row" style="gap:8px">
-      <button class="btn btn-secondary btn-sm" data-a="closeModal">Tutup</button>
-      ${p ? `<button class="btn btn-primary btn-sm" data-a="goProjectFromTask" data-id="${p.id}"><span>Lihat Proyek</span>${ic('arrow-right', 14)}</button>` : ''}
+      ${p ? `<button class="btn btn-secondary btn-sm" data-a="goProjectFromTask" data-id="${p.id}"><span>Lihat Proyek</span>${ic('arrow-right', 13)}</button>` : ''}
+      <button class="btn btn-primary btn-sm" data-a="saveQuickTask" data-id="${t.id}">${ic('check', 14)}<span>Simpan</span></button>
     </div>
   </div>`;
 }

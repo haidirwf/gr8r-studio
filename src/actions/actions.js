@@ -1379,6 +1379,36 @@ A.goProjectFromTask = el => {
   closeModal();
   if (pid) go('project', { id: pid, tab: S.prefs.defaultTab || 'overview' });
 };
+A.saveQuickTask = el => {
+  const id = el.dataset.id;
+  const t = task(id);
+  if (t) {
+    const modalEl = el.closest('.modal') || document.querySelector('.modal');
+    if (modalEl) {
+      const titleInput = modalEl.querySelector('input[data-blur="commitDrawerTitle"]');
+      const descInput = modalEl.querySelector('textarea[data-blur="quickTaskDesc"]');
+      const newTitle = titleInput?.value?.trim();
+      const newDesc = descInput?.value?.trim();
+      let changed = false;
+      mutate(() => {
+        if (newTitle && newTitle !== t.title) {
+          t.title = newTitle;
+          changed = true;
+        }
+        if (newDesc !== undefined && newDesc !== (t.desc || '')) {
+          t.desc = newDesc;
+          changed = true;
+        }
+      });
+      if (changed) {
+        saveTaskToCloud(t);
+        flushCloudSync();
+      }
+    }
+  }
+  closeModal();
+  toast('Tugas disimpan');
+};
 A.deleteQuickTask = el => {
   const id = el.dataset.id;
   closeModal();

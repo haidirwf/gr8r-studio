@@ -1,7 +1,7 @@
 /* ---------- store ---------- */
 import { TODAY, diffD, iso, parse, uid } from './utils.js';
 import { PCOLORS, TEAMS_SEED } from './constants.js';
-import { scheduleCloudSync } from './supabase.js';
+import { scheduleCloudSync, saveActivityToCloud } from './supabase.js';
 
 export const STORE_KEY = 'gr8r.v5';
 export const DEFAULT_PREFS = {
@@ -200,9 +200,38 @@ export function applyUserSession(user, cloudData = null) {
   ];
 
   if (cloudData) {
-    S.data.projects = cloudData.projects || [];
-    S.data.tasks = cloudData.tasks || [];
-    S.data.notes = cloudData.notes || [];
+    // Jika cloudData memiliki data, gunakan data cloud.
+    // Jika cloudData kosong namun data lokal memiliki proyek/tugas pengguna, pertahankan & sync ke cloud.
+    if (cloudData.projects && cloudData.projects.length) {
+      S.data.projects = cloudData.projects;
+    } else if (S.data.projects && S.data.projects.length) {
+      scheduleCloudSync(S.data, S.prefs);
+    } else {
+      S.data.projects = [];
+    }
+
+    if (cloudData.tasks && cloudData.tasks.length) {
+      S.data.tasks = cloudData.tasks;
+    } else if (S.data.tasks && S.data.tasks.length) {
+      scheduleCloudSync(S.data, S.prefs);
+    } else {
+      S.data.tasks = [];
+    }
+
+    if (cloudData.notes && cloudData.notes.length) {
+      S.data.notes = cloudData.notes;
+    } else if (S.data.notes && S.data.notes.length) {
+      scheduleCloudSync(S.data, S.prefs);
+    } else {
+      S.data.notes = [];
+    }
+
+    if (Array.isArray(cloudData.activity) && cloudData.activity.length) {
+      S.data.activity = cloudData.activity;
+    }
+    if (cloudData.profile?.theme) {
+      S.prefs.theme = cloudData.profile.theme;
+    }
     S.data.projOrder = S.data.projects.map(p => p.id);
   }
 }
@@ -230,11 +259,11 @@ export function save() {
         STORE_KEY,
         JSON.stringify({ data: S.data, prefs: S.prefs, views: S.views, collapsed: S.ui.collapsed })
       );
-      scheduleCloudSync(S.data);
+      scheduleCloudSync(S.data, S.prefs);
     } catch {
       /* storage full or blocked: keep working in memory */
     }
-  }, 150);
+  }, 100);
 }
 
 /* ---------- lookups ---------- */
@@ -261,7 +290,7 @@ export const pColor = p => PCOLORS[p?.color] || PCOLORS.slate;
 export const visibleProjects = () =>
   (D().projects || [])
     .filter(p => !p.archived);
-export const canSee = p => !p.private || (p.members && p.members.includes(D().me)) || p.lead === D().me;
+export const canSee = p => !p || !p.private || (p.members && p.members.includes(D().me)) || p.lead === D().me;
 export const tasksOf = pid => (D().tasks || []).filter(t => t.project === pid && !t.archived);
 export const allTasks = () => (D().tasks || []).filter(t => !t.archived && canSee(proj(t.project)));
 export const isOver = t => t.due && t.status !== 'done' && diffD(parse(t.due), TODAY) < 0;
@@ -280,8 +309,10 @@ export function taskProg(t) {
 /* ---------- activity + notification helpers ---------- */
 export function logAct(verb, t, extra = '') {
   if (!D().activity) D().activity = [];
-  D().activity.unshift({ id: uid('a'), by: D().me, verb, task: t?.id || null, project: t?.project || null, at: Date.now(), extra });
+  const item = { id: uid('a'), by: D().me, verb, task: t?.id || null, project: t?.project || null, at: Date.now(), extra };
+  D().activity.unshift(item);
   if (t) t.updated = Date.now();
+  saveActivityToCloud(item, D().me);
 }
 
 /* ---------- teams ---------- */

@@ -734,3 +734,59 @@
 .select-menu .mi[aria-selected='true'] {
   font-weight: 500;
 }
+
+/* Competition Resource Link Cards */
+.res-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md, 10px);
+  transition: all var(--dur);
+}
+.res-item:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+.res-item .res-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 13.5px;
+  text-decoration: none;
+  line-height: 1.3;
+}
+.res-item .res-link:hover {
+  color: var(--accent);
+}
+.res-item .res-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.res-item .res-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 20px;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+.res-item .res-del {
+  opacity: 0.45;
+  transition: all var(--dur);
+}
+.res-item:hover .res-del {
+  opacity: 0.85;
+}
+.res-item .res-del:hover {
+  opacity: 1;
+  color: var(--red) !important;
+}

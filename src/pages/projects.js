@@ -13,6 +13,17 @@ export function projectCard(p) {
   return `<div class="pcard" data-a="go" data-r="project" data-id="${p.id}" data-ctx="project" role="link" tabindex="0" aria-label="${esc(p.name)}">
     <div class="row">${pIcon(p)}<div class="grow" style="min-width:0"><div class="row" style="gap:6px"><b class="trunc" style="font-weight:600;font-size:14px">${esc(p.name)}</b>${p.fav ? `<span style="color:var(--amber)">${ic('star', 12)}</span>` : ''}${p.private ? `<span class="faint" data-tip="Private project">${ic('lock', 12)}</span>` : ''}</div></div>${pStatus(p.status)}</div>
     <div class="desc">${esc(p.desc)}</div>
+    ${
+      p.tags && p.tags.length
+        ? `<div class="row" style="gap:5px;flex-wrap:wrap;margin:4px 0">
+      ${p.tags
+        .map(
+          t => `<span class="badge" style="font-size:11px;padding:1px 7px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border-subtle);color:var(--text);font-weight:500">${esc(t)}</span>`,
+        )
+        .join('')}
+    </div>`
+        : ''
+    }
     ${locked ? `<div class="row faint" style="font-size:12px">${ic('lock', 12)}Restricted — request access to see tasks</div>` : `<div class="row" style="gap:10px">${progBar(pr, p.status === 'complete' ? 'green' : p.status === 'risk' ? 'red' : '')}<span class="num" style="font-size:12px;font-weight:500">${pr}%</span></div>`}
     ${
       p.links && p.links.length
@@ -21,7 +32,7 @@ export function projectCard(p) {
         .slice(0, 3)
         .map(
           l => `<a class="chip" data-a="openProjectLink" data-url="${esc(l.url)}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" style="font-size:11.5px;padding:2px 7px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border-subtle);display:inline-flex;align-items:center;gap:4px;color:var(--text);text-decoration:none;max-width:130px" title="${esc(l.label)}">
-        ${linkIcon(l.type, 11)}<span class="trunc">${esc(l.label)}</span><span style="opacity:0.6">${ic('external-link', 9)}</span>
+        ${linkIcon(l.type, 11)}<span class="trunc">${esc(l.label)}</span><span style="opacity:0.6;display:inline-flex;align-items:center">${ic('external-link', 9)}</span>
       </a>`,
         )
         .join('')}
@@ -38,7 +49,26 @@ export function pageProjects() {
   const q = (u.projQ || '').toLowerCase();
   const st = u.projStatus || 'all';
   const sort = u.projSort || 'recent';
-  let ps = visibleProjects().filter(p => (st === 'all' || p.status === st) && (!q || p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q)));
+  const tagFilter = u.projTag || 'all';
+
+  const allAvailableTags = [
+    ...new Set([
+      'UI/UX',
+      'Webdev',
+      'SKL',
+      ...visibleProjects().flatMap(p => p.tags || []),
+    ]),
+  ].filter(Boolean);
+
+  let ps = visibleProjects().filter(
+    p =>
+      (st === 'all' || p.status === st) &&
+      (tagFilter === 'all' || (p.tags && p.tags.includes(tagFilter))) &&
+      (!q ||
+        p.name.toLowerCase().includes(q) ||
+        p.desc.toLowerCase().includes(q) ||
+        (p.tags && p.tags.some(t => t.toLowerCase().includes(q)))),
+  );
   const sorter = { recent: p => p.last, name: p => p.name, due: p => p.due, progress: p => -progressOf(p.id) }[sort];
   ps.sort((a, b) => (sorter(a) > sorter(b) ? 1 : -1));
   const view = u.projView;
@@ -52,23 +82,28 @@ export function pageProjects() {
     body = `<div class="panel" style="overflow:hidden">${ps
       .map(p => {
         const pr = progressOf(p.id);
-        return `<div class="mini" style="min-height:52px;gap:12px" data-a="go" data-r="project" data-id="${p.id}" data-ctx="project">${pIcon(p)}<div class="grow" style="min-width:0"><div class="row" style="gap:6px"><b style="font-weight:500">${esc(p.name)}</b>${p.private ? ic('lock', 12) : ''}</div><div class="trunc faint" style="font-size:12px">${esc(p.desc)}</div></div><span class="hide-m">${pStatus(p.status)}</span><span class="row hide-m" style="width:140px">${progBar(pr)}<span class="num faint" style="font-size:11.5px">${pr}%</span></span><span class="num muted hide-m" style="width:70px;font-size:12px">${fmtDate(p.due)}</span>${avStack(p.members, 3)}<button class="ibtn ibtn-sm" data-a="ctxBtn" data-ctx="project" data-id="${p.id}" aria-label="Options">${ic('ellipsis', 14)}</button></div>`;
+        const tagsHtml = (p.tags || []).map(t => `<span class="badge" style="font-size:10.5px;padding:0 5px">${esc(t)}</span>`).join('');
+        return `<div class="mini" style="min-height:52px;gap:12px" data-a="go" data-r="project" data-id="${p.id}" data-ctx="project">${pIcon(p)}<div class="grow" style="min-width:0"><div class="row" style="gap:6px"><b style="font-weight:500">${esc(p.name)}</b>${p.private ? ic('lock', 12) : ''}${tagsHtml}</div><div class="trunc faint" style="font-size:12px">${esc(p.desc)}</div></div><span class="hide-m">${pStatus(p.status)}</span><span class="row hide-m" style="width:140px">${progBar(pr)}<span class="num faint" style="font-size:11.5px">${pr}%</span></span><span class="num muted hide-m" style="width:70px;font-size:12px">${fmtDate(p.due)}</span>${avStack(p.members, 3)}<button class="ibtn ibtn-sm" data-a="ctxBtn" data-ctx="project" data-id="${p.id}" aria-label="Options">${ic('ellipsis', 14)}</button></div>`;
       })
       .join('')}</div>`;
   else
-    body = `<div class="panel" style="overflow-x:auto"><table class="perm-t" style="min-width:860px"><thead><tr><th style="padding-left:14px">Project</th><th style="text-align:left">Status</th><th style="text-align:left">Lead</th><th style="text-align:left">Team</th><th style="text-align:left;width:16%">Progress</th><th>Tasks</th><th style="text-align:left">Start</th><th style="text-align:left">Due</th><th style="text-align:left">Last activity</th><th></th></tr></thead><tbody>
+    body = `<div class="panel" style="overflow-x:auto"><table class="perm-t" style="min-width:860px"><thead><tr><th style="padding-left:14px">Project</th><th style="text-align:left">Tags</th><th style="text-align:left">Status</th><th style="text-align:left">Lead</th><th style="text-align:left">Team</th><th style="text-align:left;width:16%">Progress</th><th>Tasks</th><th style="text-align:left">Start</th><th style="text-align:left">Due</th><th style="text-align:left">Last activity</th><th></th></tr></thead><tbody>
     ${ps
       .map(p => {
         const ts = tasksOf(p.id);
         const pr = progressOf(p.id);
-        return `<tr style="cursor:pointer" data-a="go" data-r="project" data-id="${p.id}" data-ctx="project"><td style="padding-left:14px"><span class="row">${pIcon(p, '', 14)}<span style="font-weight:500">${esc(p.name)}</span></span></td><td style="text-align:left">${pStatus(p.status)}</td><td style="text-align:left"><span class="row">${av(p.lead, 'sm')}${esc(mem(p.lead)?.name)}</span></td><td style="text-align:left" class="muted">${TM[p.team]?.name}</td><td><span class="row">${progBar(pr)}<span class="num faint" style="font-size:11.5px">${pr}%</span></span></td><td class="num">${ts.length}</td><td style="text-align:left" class="num muted">${fmtDate(p.start)}</td><td style="text-align:left" class="num muted">${fmtDate(p.due)}</td><td style="text-align:left" class="muted">${ago(minsAgo(p.last))}</td><td><button class="ibtn ibtn-sm" data-a="ctxBtn" data-ctx="project" data-id="${p.id}" aria-label="Options">${ic('ellipsis', 14)}</button></td></tr>`;
+        const tagsHtml = (p.tags || []).map(t => `<span class="badge" style="font-size:10px;padding:0 4px;margin-right:2px">${esc(t)}</span>`).join('') || '<span class="faint">—</span>';
+        return `<tr style="cursor:pointer" data-a="go" data-r="project" data-id="${p.id}" data-ctx="project"><td style="padding-left:14px"><span class="row">${pIcon(p, '', 14)}<span style="font-weight:500">${esc(p.name)}</span></span></td><td style="text-align:left">${tagsHtml}</td><td style="text-align:left">${pStatus(p.status)}</td><td style="text-align:left"><span class="row">${av(p.lead, 'sm')}${esc(mem(p.lead)?.name)}</span></td><td style="text-align:left" class="muted">${TM[p.team]?.name}</td><td><span class="row">${progBar(pr)}<span class="num faint" style="font-size:11.5px">${pr}%</span></span></td><td class="num">${ts.length}</td><td style="text-align:left" class="num muted">${fmtDate(p.start)}</td><td style="text-align:left" class="num muted">${fmtDate(p.due)}</td><td style="text-align:left" class="muted">${ago(minsAgo(p.last))}</td><td><button class="ibtn ibtn-sm" data-a="ctxBtn" data-ctx="project" data-id="${p.id}" aria-label="Options">${ic('ellipsis', 14)}</button></td></tr>`;
       })
       .join('')}
     </tbody></table></div>`;
   return `<div class="page wide">
     <div class="ph"><div><h1>Projects</h1><p>${visibleProjects().filter(p => p.status !== 'complete').length} active · ${visibleProjects().filter(p => p.status === 'complete').length} completed</p></div><div class="acts"><button class="btn btn-primary" data-a="newProject">${ic('plus', 14)}New project</button></div></div>
     <div class="row" style="margin-bottom:16px;flex-wrap:wrap;gap:8px">
-      <div class="inwrap">${ic('search', 13)}<input class="input search-sm" id="proj-q" data-in="projQ" placeholder="Search projects" value="${esc(u.projQ || '')}" aria-label="Search projects"></div>
+      <div class="inwrap">${ic('search', 13)}<input class="input search-sm" id="proj-q" data-in="projQ" placeholder="Search projects or tags" value="${esc(u.projQ || '')}" aria-label="Search projects"></div>
+      <select class="select" style="height:26px;width:auto;font-size:12px" data-in="projTag" aria-label="Filter by tag"><option value="all">Semua Tag</option>${allAvailableTags
+        .map(t => `<option value="${esc(t)}" ${tagFilter === t ? 'selected' : ''}>Tag: ${esc(t)}</option>`)
+        .join('')}</select>
       <select class="select" style="height:26px;width:auto;font-size:12px" data-in="projStatus" aria-label="Filter by status"><option value="all">All statuses</option>${Object.entries(
         PSTAT,
       )

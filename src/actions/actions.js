@@ -1,7 +1,7 @@
 /* =====================================================================
    ACTIONS · INPUT HANDLERS · DRAG & DROP · KEYBOARD · INIT
    ===================================================================== */
-import { $, $$, TODAY, addD, dOff, esc, fmtDate, iso, parse, uid } from '../core/utils.js';
+import { $, $$, TODAY, addD, dOff, esc, fmtDate, isUuid, iso, parse, uid, uuid } from '../core/utils.js';
 import { PR, PSTAT, ST } from '../core/constants.js';
 import {
   applyUserSession,
@@ -41,6 +41,8 @@ import {
   resendVerification,
   getSession,
   fetchAllUserData,
+  saveProjectToCloud,
+  flushCloudSync,
   deleteProjectFromCloud,
   deleteTaskFromCloud,
   deleteNoteFromCloud,
@@ -54,15 +56,19 @@ export const A = {},
 
 /* ---------- task mutations ---------- */
 export function nextKey(p) {
+  if (!p) {
+    const remCount = (D().tasks || []).filter(x => !x.project).length + 1;
+    return 'REM-' + remCount;
+  }
   p.seq = (p.seq || 200) + 1;
   return p.key + '-' + p.seq;
 }
 export function createTask(f) {
-  const p = proj(f.project) || visibleProjects().find(canSee);
-  const maxO = Math.max(0, ...D().tasks.map(t => t.order));
+  const p = f.project ? proj(f.project) : null;
+  const maxO = Math.max(0, ...(D().tasks || []).map(t => t.order || 0));
   const t = Object.assign(
     {
-      project: p.id,
+      project: p ? p.id : null,
       title: 'Untitled',
       status: 'todo',
       assignee: null,
@@ -82,7 +88,7 @@ export function createTask(f) {
       recur: null,
     },
     f,
-    { project: p.id },
+    { project: p ? p.id : null },
   );
   t.id = f.id || uid('t');
   t.key = f.key || nextKey(p);
@@ -127,9 +133,9 @@ export function applyPatch(t, patch) {
     else if (k === 'due') logAct('changed due date of', t, nv ? `to ${fmtDate(nv)}` : '(cleared)');
     else if (k === 'start') logAct('changed start date of', t, nv ? `to ${fmtDate(nv)}` : '(cleared)');
     else if (k === 'project') {
-      const p = proj(nv);
+      const p = nv ? proj(nv) : null;
       t.key = nextKey(p);
-      logAct('moved', t, `to ${p.name}`);
+      logAct('moved', t, p ? `to ${p.name}` : 'to Pengingat (Tanpa Proyek)');
     } else if (k === 'labels') logAct('updated labels on', t);
     else if (k === 'title') logAct('renamed', t, `to “${nv}”`);
     else if (k === 'recur') logAct('set repeat on', t, nv ? nv.toLowerCase() : 'off');
@@ -359,6 +365,7 @@ A.popPick = el => {
   ];
   if (!field) return;
   if (field === 'assignee' && !v) v = null;
+  if (field === 'project' && !v) v = null;
   if (field === 'recur' && v === 'Does not repeat') v = null;
   if ((field === 'estimate' || field === 'due' || field === 'start') && !v) v = null;
   S.ui.pop = null;
@@ -582,14 +589,12 @@ A.newTask = el => {
   const d = el?.dataset || {};
   const pid =
     d.project ||
-    curProjectId() ||
-    projectFromKey(S.ui.composer?.ctx) ||
-    (S.ui.drawer && task(S.ui.drawer)?.project) ||
-    visibleProjects().find(p => canSee(p) && p.status !== 'complete')?.id;
+    (S.ui.route === 'project' ? curProjectId() : null) ||
+    null;
   S.ui.form = {
     title: '',
     desc: '',
-    project: canSee(proj(pid)) ? pid : 'p1',
+    project: pid && canSee(proj(pid)) ? pid : null,
     status: 'todo',
     assignee: d.assignee || D().me,
     priority: 'medium',
@@ -699,7 +704,8 @@ A.submitTask = () => {
   S.ui.modals.pop();
   fxSet({ added: t.id });
   render();
-  toast(`Created ${t.key} in ${proj(t.project).name}`, { action: 'Open', onAction: () => A.openTask({ dataset: { id: t.id } }) });
+  const pName = t.project ? proj(t.project)?.name : null;
+  toast(`Tugas dibuat: “${t.title}”${pName ? ` (${pName})` : ' (Pengingat)'}`, { action: 'Buka', onAction: () => A.openQuickTask({ dataset: { id: t.id } }) });
 };
 
 /* inline composer */
@@ -1255,9 +1261,14 @@ IN.projSort = el => {
   S.ui.projSort = el.value;
   render();
 };
+IN.projTag = el => {
+  S.ui.projTag = el.value;
+  render();
+};
 A.clearProjFilters = () => {
   S.ui.projQ = '';
   S.ui.projStatus = 'all';
+  S.ui.projTag = 'all';
   render();
 };
 A.openQuickTask = el => {
@@ -1309,6 +1320,7 @@ A.newProject = () => {
     lead: D().me,
     due: dOff(14),
     tmpl: 'blank',
+    tags: ['Webdev'],
     guidebook: '',
     submission: '',
     group: '',
@@ -1335,6 +1347,7 @@ A.editProject = el => {
     lead: p.lead,
     due: p.due,
     tmpl: 'blank',
+    tags: Array.isArray(p.tags) ? [...p.tags] : [],
     guidebook: gb,
     submission: sub,
     group: grp,
@@ -1437,7 +1450,7 @@ export function makeKey(name) {
 }
 export function createProject(f, tmplId) {
   const p = {
-    id: uid('p'),
+    id: f.id && isUuid(f.id) ? f.id : uuid(),
     key: makeKey(f.name),
     name: f.name,
     icon: f.icon,
@@ -1449,6 +1462,7 @@ export function createProject(f, tmplId) {
     start: dOff(0),
     fav: false,
     members: [...new Set([D().me, f.lead])],
+    tags: Array.isArray(f.tags) ? [...f.tags] : [],
     links: f.links || [],
     desc: f.desc || 'No description yet.',
     milestones: [],
@@ -1471,6 +1485,41 @@ export function createProject(f, tmplId) {
   );
   return p;
 }
+A.pformToggleTag = el => {
+  const tag = el.dataset.tag;
+  if (!tag) return;
+  if (!Array.isArray(S.ui.pform.tags)) S.ui.pform.tags = [];
+  const idx = S.ui.pform.tags.indexOf(tag);
+  if (idx >= 0) {
+    S.ui.pform.tags.splice(idx, 1);
+  } else {
+    S.ui.pform.tags.push(tag);
+  }
+  render();
+};
+A.pformAddCustomTag = () => {
+  const input = $('#p-custom-tag');
+  const val = (input?.value || '').trim();
+  if (!val) return;
+  if (!Array.isArray(S.ui.pform.tags)) S.ui.pform.tags = [];
+  if (!S.ui.pform.tags.includes(val)) {
+    S.ui.pform.tags.push(val);
+  }
+  if (input) input.value = '';
+  render();
+};
+A.pformRemoveTag = el => {
+  const tag = el.dataset.tag;
+  if (!tag || !Array.isArray(S.ui.pform.tags)) return;
+  S.ui.pform.tags = S.ui.pform.tags.filter(t => t !== tag);
+  render();
+};
+KEY.pformCustomTag = e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    A.pformAddCustomTag();
+  }
+};
 A.submitProject = () => {
   const m = S.ui.modals[S.ui.modals.length - 1];
   const f = S.ui.pform;
@@ -1508,11 +1557,14 @@ A.submitProject = () => {
           team: f.team,
           lead: f.lead,
           due: f.due,
+          tags: Array.isArray(f.tags) ? [...f.tags] : [],
           members: [...new Set([...p.members, f.lead])],
           links: collectedLinks.length ? collectedLinks : p.links || [],
         }),
       )
     ) {
+      saveProjectToCloud(p);
+      flushCloudSync();
       S.ui.modals.pop();
       render();
       toast('Proyek / Lomba diperbarui');
@@ -1526,6 +1578,8 @@ A.submitProject = () => {
     })
   )
     return;
+  saveProjectToCloud(p);
+  flushCloudSync();
   S.ui.modals.pop();
   go('project', { id: p.id, tab: 'overview' });
   toast(`Berhasil membuat ${p.name}`);

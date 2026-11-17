@@ -49,7 +49,7 @@ export function drawerHtml(t) {
   return `<aside class="drawer ${u.drawerFull ? 'full' : ''} ${u.fx.drawer ? 'enter' : ''} ${u.fx.tabs ? 'fx-tabs' : ''}" role="dialog" aria-modal="${u.drawerFull}" aria-labelledby="d-h" tabindex="-1">
     <h2 class="sr" id="d-h">${sub ? 'Subtask: ' + esc(sub.title) : 'Task: ' + esc(t.title)}</h2>
     <div class="drawer-h">
-      <button class="pillbtn" data-a="go" data-r="project" data-id="${p.id}" data-tab="board" style="font-size:12.5px"><span class="pdot" style="--c:${pColor(p)}"></span>${esc(p.name)}</button><span class="faint">/</span><span class="mono faint" style="font-size:11.5px;padding:0 6px">${t.key}</span>
+      ${p ? `<button class="pillbtn" data-a="go" data-r="project" data-id="${p.id}" data-tab="board" style="font-size:12.5px"><span class="pdot" style="--c:${pColor(p)}"></span>${esc(p.name)}</button>` : `<span class="pillbtn" style="font-size:12.5px;cursor:default"><span class="pdot" style="--c:var(--amber, #f59e0b)"></span>Pengingat Pribadi</span>`}<span class="faint">/</span><span class="mono faint" style="font-size:11.5px;padding:0 6px">${t.key}</span>
       <span class="sp"></span>
       <button class="btn btn-sm ${t.status === 'done' ? 'btn-secondary' : 'btn-ghost'}" data-a="toggleDone" data-id="${t.id}" style="${t.status === 'done' ? 'color:var(--green)' : ''}">${ic(t.status === 'done' ? 'circle-check' : 'circle', 14)}<span class="hide-m">${t.status === 'done' ? 'Completed' : 'Mark complete'}</span></button>
       <button class="ibtn ibtn-sm" data-a="toggleFavTask" data-id="${t.id}" data-tip="${t.fav ? 'Unfavorite' : 'Favorite'}" aria-pressed="${t.fav}" aria-label="Favorite" style="${t.fav ? 'color:var(--amber)' : ''}">${ic('star', 15)}</button>
@@ -71,7 +71,7 @@ export function drawerHtml(t) {
             l => `<a class="chip" data-a="openProjectLink" data-url="${esc(l.url)}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);color:var(--text);text-decoration:none;font-size:11.5px;font-weight:500" title="${esc(l.label)}">
             ${linkIcon(l.type, 12)}
             <span>${esc(l.label)}</span>
-            <span style="opacity:0.6">${ic('external-link', 9)}</span>
+            <span style="opacity:0.6;display:inline-flex;align-items:center">${ic('external-link', 9)}</span>
           </a>`,
           )
           .join('')}

@@ -118,3 +118,58 @@ export function linkIcon(type, s = 14) {
   if (type === 'group') return ic('message-circle', s);
   return ic('link', s);
 }
+
+export function linkMeta(type) {
+  switch (type) {
+    case 'guidebook':
+      return {
+        label: 'Guidebook',
+        icon: 'book-open',
+        color: '#60a5fa',
+        bg: 'rgba(59, 130, 246, 0.12)',
+        border: 'rgba(59, 130, 246, 0.25)',
+      };
+    case 'submission':
+      return {
+        label: 'Submission',
+        icon: 'send',
+        color: '#fbbf24',
+        bg: 'rgba(245, 158, 11, 0.12)',
+        border: 'rgba(245, 158, 11, 0.25)',
+      };
+    case 'group':
+      return {
+        label: 'Grup WA',
+        icon: 'message-circle',
+        color: '#34d399',
+        bg: 'rgba(16, 185, 129, 0.12)',
+        border: 'rgba(16, 185, 129, 0.25)',
+      };
+    case 'social':
+      return {
+        label: 'Social',
+        icon: 'globe',
+        color: '#c084fc',
+        bg: 'rgba(168, 85, 247, 0.12)',
+        border: 'rgba(168, 85, 247, 0.25)',
+      };
+    default:
+      return {
+        label: 'Tautan',
+        icon: 'link',
+        color: '#818cf8',
+        bg: 'rgba(99, 102, 241, 0.12)',
+        border: 'rgba(99, 102, 241, 0.25)',
+      };
+  }
+}
+
+export function formatUrlDomain(url) {
+  if (!url) return '';
+  try {
+    const u = new URL(url.startsWith('http') ? url : `https://${url}`);
+    return u.hostname.replace(/^www\./, '');
+  } catch {
+    return url.replace(/^https?:\/\//, '').split('/')[0] || url;
+  }
+}

@@ -145,14 +145,19 @@ export function popHtml(p) {
         { search: 'Filter labels…' },
       );
       break;
-    case 'project':
+    case 'project': {
+      const curProj = p.id === '__form' ? S.ui.form?.project : t?.project;
       inner = popList(
-        visibleProjects()
-          .filter(q => canSee(q) && q.status !== 'complete')
-          .map(q => ({ id: q.id, name: q.name, html: `<span class="pdot" style="--c:${pColor(q)}"></span>`, on: t?.project === q.id })),
-        { search: 'Move to project…' },
+        [
+          { id: '', name: 'Tanpa Proyek (Pengingat Pribadi)', html: ic('bell', 14), on: !curProj },
+          ...visibleProjects()
+            .filter(q => canSee(q) && q.status !== 'complete')
+            .map(q => ({ id: q.id, name: q.name, html: `<span class="pdot" style="--c:${pColor(q)}"></span>`, on: curProj === q.id })),
+        ],
+        { search: 'Pilih proyek atau pengingat…' },
       );
       break;
+    }
     case 'recur':
       inner = popList(
         ['Does not repeat', 'Daily', 'Weekly', 'Every 2 weeks', 'Monthly'].map(x => ({
@@ -325,10 +330,17 @@ export function popHtml(p) {
     }
     case 'daylist': {
       const ds = p.date;
+      const projs = (D().projects || []).filter(x => !x.archived && x.due === ds);
       const evs = D().events.filter(e => e.date === ds);
       const ts = allTasks().filter(x => x.due === ds);
       inner =
         `<div class="mh">${fmtDate(ds, true)}</div>` +
+        projs
+          .map(
+            x =>
+              `<button class="mi" data-a="go" data-r="project" data-id="${x.id}" data-tab="overview" style="font-weight:600"><span class="pdot" style="--c:${pColor(x)}"></span><span class="trunc">Deadline: ${esc(x.name)}</span></button>`,
+          )
+          .join('') +
         evs
           .map(
             e =>

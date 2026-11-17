@@ -62,6 +62,15 @@ export const PICONS = [
   'sparkles',
 ];
 export const ROLES = ['Owner', 'Admin', 'Member', 'Guest'];
+export const PROJECT_TAGS = [
+  'Webdev',
+  'UI/UX',
+  'SKL',
+  'Mobile',
+  'Data Science',
+  'Lomba',
+  'Umum',
+];
 export const TEAMS_SEED = [
   { id: 'design', name: 'Design', icon: 'palette', c: '#8662C9', desc: 'Product design, brand, and research' },
   { id: 'eng', name: 'Engineering', icon: 'code', c: '#3B82C4', desc: 'Web, mobile, and platform engineering' },

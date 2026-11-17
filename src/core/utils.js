@@ -8,7 +8,29 @@ document.querySelectorAll('link[data-font]').forEach(l => {
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-export const uid = (p = 'x') => p + Math.random().toString(36).slice(2, 8);
+
+export const isUuid = str =>
+  typeof str === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+export const uuid = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
+const UUID_PREFIXES = new Set(['p', 't', 'n', 'a']);
+export const uid = (p = 'x') => {
+  if (UUID_PREFIXES.has(p)) {
+    return uuid();
+  }
+  return p + Math.random().toString(36).slice(2, 8);
+};
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 export const MOD = isMac ? '⌘' : 'Ctrl';

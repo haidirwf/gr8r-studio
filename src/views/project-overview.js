@@ -3,7 +3,7 @@ import { TODAY, dayBucket, diffD, esc, fmtDate, parse } from '../core/utils.js';
 import { ic } from '../core/icons.js';
 import { STATUSES } from '../core/constants.js';
 import { D, isOver, pColor, progressOf, task, tasksOf } from '../core/store.js';
-import { empty, linkIcon, pStatus, stIcon } from '../ui/helpers.js';
+import { empty, formatUrlDomain, linkMeta, pStatus, stIcon } from '../ui/helpers.js';
 import { sortTasks } from '../shell/view-engine.js';
 import { actHtml, miniRow } from '../components/task-list.js';
 
@@ -36,6 +36,7 @@ export function projOverview(p) {
       <div class="stack">
         <section class="panel"><div class="panel-h"><h2>Details</h2></div><div class="panel-b"><dl class="kv">
           <dt>${ic('circle-dot', 14)}Status</dt><dd><button class="pillbtn" data-a="pop" data-pop="pstatus" data-id="${p.id}">${pStatus(p.status)}</button></dd>
+          <dt>${ic('tag', 14)}Tags</dt><dd class="row" style="gap:4px;flex-wrap:wrap">${(p.tags || []).length ? (p.tags || []).map(t => `<span class="badge" style="font-size:11px;padding:2px 7px;font-weight:500">${esc(t)}</span>`).join('') : '<span class="faint">Belum ada tag</span>'}</dd>
           <dt>${ic('calendar', 14)}Start</dt><dd><span class="pillbtn num">${fmtDate(p.start, true)}</span></dd>
           <dt>${ic('flag', 14)}Due</dt><dd><span class="pillbtn num">${fmtDate(p.due, true)}</span></dd>
         </dl></div></section>
@@ -48,18 +49,26 @@ export function projOverview(p) {
           </div>
           <div class="panel-b" style="display:flex;flex-direction:column;gap:8px">
             ${links.length
-              ? links.map(l => `
-                <div class="row" style="gap:8px;padding:8px 10px;background:var(--surface-2);border-radius:var(--rad);border:1px solid var(--border-subtle);align-items:center">
-                  <span style="color:var(--accent);display:flex;align-items:center">${linkIcon(l.type, 16)}</span>
-                  <a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" class="grow trunc" style="color:var(--text);font-weight:500;font-size:13px;text-decoration:none" title="${esc(l.url)}">
-                    ${esc(l.label)}
-                    <span class="faint" style="font-size:11.5px;font-weight:400;margin-left:4px">${ic('external-link', 11)}</span>
-                  </a>
-                  <span class="badge" style="font-size:10.5px;text-transform:capitalize">${esc(l.type || 'link')}</span>
-                  <button class="ibtn ibtn-xs" data-a="removeProjectLink" data-pid="${p.id}" data-lid="${l.id}" title="Hapus link" aria-label="Hapus link" style="color:var(--text-3)">${ic('trash-2', 13)}</button>
+              ? links.map(l => {
+                const meta = linkMeta(l.type);
+                const host = formatUrlDomain(l.url);
+                return `
+                <div class="res-item">
+                  <div class="res-icon" style="background:${meta.bg};color:${meta.color}">
+                    ${ic(meta.icon, 18)}
+                  </div>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                    <a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" class="res-link" title="${esc(l.url)}">
+                      <span class="trunc">${esc(l.label)}</span>
+                      <span style="display:inline-flex;align-items:center;color:var(--text-3);flex-shrink:0">${ic('arrow-up-right', 12)}</span>
+                    </a>
+                    ${host ? `<span style="font-size:11px;color:var(--text-3);font-family:var(--font-mono, monospace);line-height:1.2" class="trunc">${esc(host)}</span>` : ''}
+                  </div>
+                  <span class="res-badge" style="background:${meta.bg};color:${meta.color};border:1px solid ${meta.border}">${esc(meta.label)}</span>
+                  <button class="ibtn ibtn-xs res-del" data-a="removeProjectLink" data-pid="${p.id}" data-lid="${l.id}" title="Hapus link" aria-label="Hapus link">${ic('trash-2', 14)}</button>
                 </div>
-              `).join('')
-              : `<div class="empty sm faint" style="padding:14px 0;text-align:center">${ic('link', 18)}<div style="margin-top:6px;font-size:12.5px">Belum ada link / sumber lomba.</div><button class="btn btn-xs btn-secondary" style="margin-top:8px" data-a="addProjectLink" data-id="${p.id}">${ic('plus', 12)}Tambah Link</button></div>`
+              `;}).join('')
+              : `<div class="empty sm faint" style="padding:16px 0;text-align:center">${ic('link', 20)}<div style="margin-top:6px;font-size:12.5px">Belum ada tautan kebutuhan lomba.</div><button class="btn btn-xs btn-secondary" style="margin-top:8px" data-a="addProjectLink" data-id="${p.id}">${ic('plus', 12)}Tambah Link</button></div>`
             }
           </div>
         </section>

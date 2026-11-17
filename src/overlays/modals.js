@@ -1,9 +1,9 @@
 /* ---------------- MODALS ---------------- */
 import { $$, MOD, ago, esc, fmtDate } from '../core/utils.js';
 import { ic } from '../core/icons.js';
-import { PCOLORS, PICONS } from '../core/constants.js';
+import { PCOLORS, PICONS, PROJECT_TAGS } from '../core/constants.js';
 import { D, S, mem, pColor, proj, task, teamsList } from '../core/store.js';
-import { FT, av, filePrev, lbl, linkIcon, prPill, stPill } from '../ui/helpers.js';
+import { FT, av, filePrev, lbl, linkMeta, prPill, stPill } from '../ui/helpers.js';
 import { focusKey, render } from '../shell/render.js';
 import { teamModal } from '../features/teams.js';
 import { noteModal } from '../pages/notes.js';
@@ -121,7 +121,7 @@ export function modalHtml(m) {
     case 'projectLink':
       return wrap(
         'sm',
-        `${H('Add Resource / Link', 'Tambahkan tautan panduan lomba, formulir submit, atau grup koordinasi.')}<form class="modal-b" data-submit="submitProjectLink" style="gap:12px"><div class="field"><label class="label" for="pl-label">Nama Link</label><input class="input" id="pl-label" placeholder="Contoh: Juknis Lomba (PDF), Form Submit, Grup WA" autofocus required></div><div class="field"><label class="label" for="pl-url">URL</label><input class="input" id="pl-url" type="url" placeholder="https://..." required></div><div class="field"><label class="label" for="pl-type">Tipe Link</label><select class="select" id="pl-type"><option value="guidebook">Guidebook / Juknis</option><option value="submission">Submission / Form</option><option value="group">Grup Koordinasi (WA/Discord/Telegram)</option><option value="social">Media Sosial / Website</option><option value="other">Lainnya</option></select></div></form><div class="modal-f"><span class="sp"></span><button class="btn btn-secondary" data-a="closeModal">Cancel</button><button class="btn btn-primary" data-a="submitProjectLink">Add link</button></div>`,
+        `${H('Tambah Tautan Proyek', 'Tambahkan tautan panduan, formulir submit, atau grup koordinasi.')}<form class="modal-b" data-submit="submitProjectLink" style="gap:12px"><div class="field"><label class="label" for="pl-label">Nama Link</label><input class="input" id="pl-label" placeholder="Contoh: Juknis Lomba, Form Submit, Grup WA" autofocus required></div><div class="field"><label class="label" for="pl-url">URL</label><input class="input" id="pl-url" type="url" placeholder="https://..." required></div><div class="field"><label class="label" for="pl-type">Tipe Link</label><select class="select" id="pl-type"><option value="guidebook">Buku Panduan</option><option value="submission">Formulir Pengumpulan</option><option value="group">Grup Koordinasi</option><option value="social">Media Sosial</option><option value="other">Lainnya</option></select></div></form><div class="modal-f"><span class="sp"></span><button class="btn btn-secondary" data-a="closeModal">Batal</button><button class="btn btn-primary" data-a="submitProjectLink">Tambah Link</button></div>`,
       );
     case 'note':
       return wrap('', noteModal(m, H));
@@ -142,12 +142,12 @@ export function taskModal(m, H) {
   const f = S.ui.form;
   const p = proj(f.project);
   const err = S.ui.errors.title;
-  return `${H(m.edit ? 'Edit task' : 'New task', m.edit ? `<span class="mono">${task(m.edit)?.key}</span>` : '')}
+  return `${H(m.edit ? 'Edit Tugas / Pengingat' : 'Tugas / Pengingat Baru', m.edit ? `<span class="mono">${task(m.edit)?.key}</span>` : '')}
   <form class="modal-b" data-submit="submitTask" style="gap:12px">
-    <div class="field"><label class="sr" for="f-title">Task name</label><input class="input input-lg ${err ? 'is-error' : ''}" id="f-title" data-in="form" data-f="title" value="${esc(f.title)}" placeholder="Task name" autofocus aria-invalid="${!!err}" aria-describedby="f-title-err" style="font-size:15px;font-weight:500">${err ? `<span class="err" id="f-title-err">${ic('circle-alert', 12)}${err}</span>` : ''}</div>
-    <div class="field"><label class="sr" for="f-desc">Description</label><textarea class="textarea" id="f-desc" data-in="form" data-f="desc" placeholder="Add a description… (optional)" rows="3">${esc(f.desc)}</textarea></div>
+    <div class="field"><label class="sr" for="f-title">Nama tugas atau pengingat</label><input class="input input-lg ${err ? 'is-error' : ''}" id="f-title" data-in="form" data-f="title" value="${esc(f.title)}" placeholder="Contoh: Beli perlengkapan, deadline revisi..." autofocus aria-invalid="${!!err}" aria-describedby="f-title-err" style="font-size:15px;font-weight:500">${err ? `<span class="err" id="f-title-err">${ic('circle-alert', 12)}${err}</span>` : ''}</div>
+    <div class="field"><label class="sr" for="f-desc">Deskripsi</label><textarea class="textarea" id="f-desc" data-in="form" data-f="desc" placeholder="Catatan tambahan… (opsional)" rows="2">${esc(f.desc)}</textarea></div>
     <div class="row" style="flex-wrap:wrap;gap:6px">
-      ${formChip('project', `<span class="pdot" style="--c:${pColor(p)}"></span>${esc(p?.name || 'Project')}`, 'Project')}
+      ${formChip('project', p ? `<span class="pdot" style="--c:${pColor(p)}"></span>${esc(p.name)}` : `${ic('bell', 13)}<span>Tanpa Proyek (Pengingat)</span>`, 'Project')}
       ${formChip('status', stPill(f.status), 'Status')}
       ${formChip('assignee', `${av(f.assignee, 'sm', false)}${esc(mem(f.assignee)?.name || 'Assignee')}`, 'Assignee')}
       ${formChip('priority', prPill(f.priority), 'Priority')}
@@ -165,7 +165,7 @@ export function taskModal(m, H) {
   </form>
   <div class="modal-f">${m.edit ? '' : `<label class="row" style="gap:8px;font-size:12.5px;color:var(--text-2);cursor:pointer"><input type="checkbox" class="toggle" id="f-more" data-in="formMore" ${f.more ? 'checked' : ''}>Create more</label>`}<span class="sp"></span>
     <span class="faint hide-m" style="font-size:11.5px"><kbd>${MOD}</kbd> <kbd>↵</kbd></span>
-    <button class="btn btn-secondary" data-a="closeModal">Cancel</button><button class="btn btn-primary" data-a="submitTask" id="f-submit">${m.edit ? 'Save changes' : 'Create task'}</button></div>`;
+    <button class="btn btn-secondary" data-a="closeModal">Batal</button><button class="btn btn-primary" data-a="submitTask" id="f-submit">${m.edit ? 'Simpan' : 'Tambah Tugas'}</button></div>`;
 }
 export const TEMPLATES = [
   { id: 'blank', name: 'Blank project', icon: 'file', desc: 'Start from scratch', tasks: [] },
@@ -217,7 +217,7 @@ export function quickTaskModal(m, H) {
   if (!t) return `${H('Tugas')}<div class="modal-b" style="padding:16px 20px"><div class="cal-agenda-empty">Tugas tidak ditemukan.</div></div>`;
   const p = proj(t.project);
   const isDone = t.status === 'done';
-  return `${H(p ? esc(p.name) : 'Detail Tugas', t.key ? `<span class="mono">${esc(t.key)}</span>` : '')}
+  return `${H(p ? esc(p.name) : 'Pengingat Pribadi', t.key ? `<span class="mono">${esc(t.key)}</span>` : '')}
   <div class="modal-b" style="gap:14px;padding:16px 20px">
     <div style="font-size:17px;font-weight:700;color:var(--text);line-height:1.4">${esc(t.title)}</div>
     
@@ -235,7 +235,10 @@ export function quickTaskModal(m, H) {
       <div style="display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--divider);padding-top:10px">
         <span style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em">Link Lomba Terkait</span>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
-          ${p.links.map(l => `<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" class="pillbtn bordered" style="text-decoration:none">${linkIcon(l.type, 13)}<span>${esc(l.label)}</span>${ic('arrow-up-right', 11)}</a>`).join('')}
+          ${p.links.map(l => {
+            const lm = linkMeta(l.type);
+            return `<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" class="pillbtn bordered" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;background:${lm.bg};color:${lm.color};border-color:${lm.border}"><span style="display:inline-flex;align-items:center">${ic(lm.icon, 13)}</span><span>${esc(l.label)}</span><span style="display:inline-flex;align-items:center;opacity:0.7">${ic('arrow-up-right', 11)}</span></a>`;
+          }).join('')}
         </div>
       </div>
     ` : ''}
@@ -252,14 +255,27 @@ export function quickTaskModal(m, H) {
 export function projectModal(m, H) {
   const f = S.ui.pform;
   const err = S.ui.errors.pname;
-  return `${H(m.edit ? 'Pengaturan Proyek / Lomba' : 'Tambah Proyek / Lomba Baru', m.edit ? '' : 'Buat pelacak lomba atau modul tugas SKL.')}
+  return `${H(m.edit ? 'Pengaturan Proyek' : 'Tambah Proyek Baru', m.edit ? '' : 'Kelola timeline dan kebutuhan proyek Anda.')}
   <form class="modal-b" data-submit="submitProject" style="gap:14px;overflow-x:hidden;max-width:100%;box-sizing:border-box">
     <div class="row" style="gap:10px;align-items:flex-start;min-width:0">
       <button type="button" class="picon lg" style="--c:${PCOLORS[f.color]};cursor:default;flex-shrink:0;margin-top:22px" aria-hidden="true" tabindex="-1">${ic(f.icon, 18)}</button>
-      <div class="field grow" style="min-width:0"><label class="label" for="p-name">Nama Lomba / Proyek</label><input class="input ${err ? 'is-error' : ''}" id="p-name" data-in="pform" data-f="name" value="${esc(f.name)}" placeholder="Contoh: Lomba Web Design 2026" autofocus aria-invalid="${!!err}">${err ? `<span class="err">${ic('circle-alert', 12)}${err}</span>` : ''}</div>
+      <div class="field grow" style="min-width:0"><label class="label" for="p-name">Nama Proyek</label><input class="input ${err ? 'is-error' : ''}" id="p-name" data-in="pform" data-f="name" value="${esc(f.name)}" placeholder="Contoh: Lomba Web Design 2026" autofocus aria-invalid="${!!err}">${err ? `<span class="err">${ic('circle-alert', 12)}${err}</span>` : ''}</div>
     </div>
-    <div class="field" style="min-width:0"><label class="label" for="p-desc">Deskripsi Singkat</label><textarea class="textarea" id="p-desc" data-in="pform" data-f="desc" rows="2" placeholder="Tentang lomba atau tugas SKL ini...">${esc(f.desc)}</textarea></div>
-    <div class="field" style="min-width:0"><label class="label" for="p-due">Batas Waktu / Deadline</label><input type="date" class="input" id="p-due" data-in="pform" data-f="due" value="${f.due || ''}"></div>
+    <div class="field" style="min-width:0"><label class="label" for="p-desc">Deskripsi Singkat</label><textarea class="textarea" id="p-desc" data-in="pform" data-f="desc" rows="2" placeholder="Deskripsi singkat proyek...">${esc(f.desc)}</textarea></div>
+    
+    <div class="row" style="gap:12px;min-width:0;align-items:flex-end">
+      <div class="field grow" style="min-width:0;flex:1">
+        <label class="label" for="p-due">Tenggat Waktu</label>
+        <input type="date" class="input" id="p-due" data-in="pform" data-f="due" value="${f.due || ''}">
+      </div>
+      <div class="field grow" style="min-width:0;flex:1">
+        <label class="label" for="p-tag-select">Tag Proyek</label>
+        <select class="select" id="p-tag-select" data-in="pformTagSelect" style="width:100%;height:36px">
+          ${[...new Set([...PROJECT_TAGS, ...(f.tags || [])])].map(t => `<option value="${esc(t)}" ${(f.tags || ['Webdev']).includes(t) ? 'selected' : ''}>${esc(t)}</option>`).join('')}
+          <option value="__custom__">+ Tambah Tag Lain...</option>
+        </select>
+      </div>
+    </div>
     
     <div class="field" style="min-width:0"><span class="label">Icon</span><div class="iconpick" role="radiogroup" aria-label="Icon" style="width:100%">${PICONS.map(i => `<button type="button" role="radio" aria-checked="${f.icon === i}" class="${f.icon === i ? 'on' : ''}" data-a="pformSet" data-f="icon" data-v="${i}" aria-label="${i}">${ic(i, 15)}</button>`).join('')}</div></div>
     
@@ -273,12 +289,12 @@ export function projectModal(m, H) {
       .join('')}</div></div>
 
     <div class="field" style="border-top:1px solid var(--divider);padding-top:14px;margin-top:4px;min-width:0">
-      <span class="label" style="font-weight:600;color:var(--text);font-size:13px">Tautan Kebutuhan Lomba / Proyek</span>
+      <span class="label" style="font-weight:600;color:var(--text);font-size:13px">Tautan Proyek</span>
       <div class="col" style="gap:8px;margin-top:6px;min-width:0">
-        <div class="field" style="min-width:0"><label class="label" for="p-link-guidebook" style="font-size:12px">📖 Guidebook / Juknis (Drive/PDF)</label><input class="input" id="p-link-guidebook" placeholder="https://drive.google.com/..." value="${esc(f.guidebook || '')}" autocapitalize="off" autocorrect="off"></div>
-        <div class="field" style="min-width:0"><label class="label" for="p-link-submission" style="font-size:12px">📤 Pengumpulan / Submission</label><input class="input" id="p-link-submission" placeholder="https://forms.gle/..." value="${esc(f.submission || '')}" autocapitalize="off" autocorrect="off"></div>
-        <div class="field" style="min-width:0"><label class="label" for="p-link-group" style="font-size:12px">💬 Grup Koordinasi (WA/Telegram)</label><input class="input" id="p-link-group" placeholder="https://chat.whatsapp.com/..." value="${esc(f.group || '')}" autocapitalize="off" autocorrect="off"></div>
-        <div class="field" style="min-width:0"><label class="label" for="p-link-social" style="font-size:12px">📸 Info / Instagram Panitia</label><input class="input" id="p-link-social" placeholder="https://instagram.com/..." value="${esc(f.social || '')}" autocapitalize="off" autocorrect="off"></div>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-guidebook" style="font-size:12px">📖 Buku Panduan</label><input class="input" id="p-link-guidebook" placeholder="https://drive.google.com/..." value="${esc(f.guidebook || '')}" autocapitalize="off" autocorrect="off"></div>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-submission" style="font-size:12px">📤 Formulir Pengumpulan</label><input class="input" id="p-link-submission" placeholder="https://forms.gle/..." value="${esc(f.submission || '')}" autocapitalize="off" autocorrect="off"></div>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-group" style="font-size:12px">💬 Grup Koordinasi</label><input class="input" id="p-link-group" placeholder="https://chat.whatsapp.com/..." value="${esc(f.group || '')}" autocapitalize="off" autocorrect="off"></div>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-social" style="font-size:12px">📸 Media Sosial Panitia</label><input class="input" id="p-link-social" placeholder="https://instagram.com/..." value="${esc(f.social || '')}" autocapitalize="off" autocorrect="off"></div>
       </div>
     </div>
   </form>

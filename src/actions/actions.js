@@ -1430,6 +1430,7 @@ A.newProject = () => {
     due: dOff(14),
     tmpl: 'blank',
     tags: ['Webdev'],
+    website: '',
     guidebook: '',
     submission: '',
     group: '',
@@ -1443,6 +1444,7 @@ A.editProject = el => {
   const p = proj(el.dataset.id);
   if (!p) return;
   S.ui.pop = null;
+  const web = p.links?.find(l => l.type === 'website')?.url || '';
   const gb = p.links?.find(l => l.type === 'guidebook')?.url || '';
   const sub = p.links?.find(l => l.type === 'submission')?.url || '';
   const grp = p.links?.find(l => l.type === 'group')?.url || '';
@@ -1458,6 +1460,7 @@ A.editProject = el => {
     due: p.due,
     tmpl: 'blank',
     tags: Array.isArray(p.tags) ? [...p.tags] : [],
+    website: web,
     guidebook: gb,
     submission: sub,
     group: grp,
@@ -1475,6 +1478,8 @@ export function syncPformFromDom() {
   if (descEl) f.desc = descEl.value;
   const dueEl = $('#p-due');
   if (dueEl) f.due = dueEl.value;
+  const webEl = $('#p-link-website');
+  if (webEl) f.website = webEl.value;
   const gbEl = $('#p-link-guidebook');
   if (gbEl) f.guidebook = gbEl.value;
   const subEl = $('#p-link-submission');
@@ -1661,16 +1666,24 @@ A.submitProject = () => {
     return;
   }
 
+  const webUrl = (f.website || $('#p-link-website')?.value || '').trim();
   const gbUrl = (f.guidebook || $('#p-link-guidebook')?.value || '').trim();
   const subUrl = (f.submission || $('#p-link-submission')?.value || '').trim();
   const grpUrl = (f.group || $('#p-link-group')?.value || '').trim();
   const socUrl = (f.social || $('#p-link-social')?.value || '').trim();
 
   const collectedLinks = [];
+  if (webUrl) collectedLinks.push({ id: uid('l'), type: 'website', label: 'Website Lomba', url: webUrl.startsWith('http') ? webUrl : 'https://' + webUrl });
   if (gbUrl) collectedLinks.push({ id: uid('l'), type: 'guidebook', label: 'Buku Panduan', url: gbUrl.startsWith('http') ? gbUrl : 'https://' + gbUrl });
   if (subUrl) collectedLinks.push({ id: uid('l'), type: 'submission', label: 'Formulir Pengumpulan', url: subUrl.startsWith('http') ? subUrl : 'https://' + subUrl });
   if (grpUrl) collectedLinks.push({ id: uid('l'), type: 'group', label: 'Grup Koordinasi', url: grpUrl.startsWith('http') ? grpUrl : 'https://' + grpUrl });
   if (socUrl) collectedLinks.push({ id: uid('l'), type: 'social', label: 'Media Sosial Panitia', url: socUrl.startsWith('http') ? socUrl : 'https://' + socUrl });
+
+  if (m.edit) {
+    const existingP = proj(m.edit);
+    const customLinks = (existingP?.links || []).filter(l => !['website', 'guidebook', 'submission', 'group', 'social', '__tags_meta__', '__image_meta__'].includes(l.type));
+    collectedLinks.push(...customLinks);
+  }
 
   f.links = collectedLinks;
 

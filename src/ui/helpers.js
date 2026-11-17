@@ -120,6 +120,7 @@ export function filePrev(f) {
 }
 
 export function linkIcon(type, s = 14) {
+  if (type === 'website') return ic('globe', s);
   if (type === 'guidebook') return ic('book-open', s);
   if (type === 'submission') return ic('send', s);
   if (type === 'social') return ic('globe', s);
@@ -129,6 +130,14 @@ export function linkIcon(type, s = 14) {
 
 export function linkMeta(type) {
   switch (type) {
+    case 'website':
+      return {
+        label: 'Website Lomba',
+        icon: 'globe',
+        color: '#38bdf8',
+        bg: 'rgba(56, 189, 248, 0.12)',
+        border: 'rgba(56, 189, 248, 0.25)',
+      };
     case 'guidebook':
       return {
         label: 'Guidebook',

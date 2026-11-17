@@ -21,6 +21,7 @@ export function projOverview(p) {
     .slice(0, 6);
   const daysLeft = diffD(parse(p.due), TODAY);
   const links = p.links || [];
+  const webLink = links.find(l => l.type === 'website') || links[0];
   return `<div class="page" style="max-width:1160px;padding-top:22px">
     <div class="grid2">
       <div class="stack">
@@ -37,6 +38,7 @@ export function projOverview(p) {
         <section class="panel"><div class="panel-h"><h2>Details</h2></div><div class="panel-b"><dl class="kv">
           <dt>${ic('circle-dot', 14)}Status</dt><dd><button class="pillbtn" data-a="pop" data-pop="pstatus" data-id="${p.id}">${pStatus(p.status)}</button></dd>
           <dt>${ic('tag', 14)}Tags</dt><dd class="row" style="gap:4px;flex-wrap:wrap">${(p.tags || []).length ? (p.tags || []).map(t => `<span class="badge" style="font-size:11px;padding:2px 7px;font-weight:500">${esc(t)}</span>`).join('') : '<span class="faint">Belum ada tag</span>'}</dd>
+          ${webLink ? `<dt>${ic('globe', 14)}Link Lomba</dt><dd><a href="${esc(webLink.url)}" target="_blank" rel="noopener noreferrer" class="res-link" style="font-size:12.5px" title="${esc(webLink.url)}"><span class="trunc">${esc(webLink.label)}</span> ${ic('arrow-up-right', 11)}</a></dd>` : ''}
           <dt>${ic('calendar', 14)}Start</dt><dd><span class="pillbtn num">${fmtDate(p.start, true)}</span></dd>
           <dt>${ic('flag', 14)}Due</dt><dd><span class="pillbtn num">${fmtDate(p.due, true)}</span></dd>
         </dl></div></section>

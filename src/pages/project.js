@@ -48,6 +48,8 @@ export function pageProject() {
   else if (tab === 'activity') body = projActivity(p);
   else body = taskViewBody(tab, applyView(ts, viewOf(key)), key, p);
 
+  const mainLink = (p.links || []).find(l => l.type === 'website') || (p.links || [])[0];
+
   return `<div class="page flush">
     <div class="proj-h">
       <div class="t">
@@ -55,6 +57,7 @@ export function pageProject() {
         <h1>${esc(p.name)}</h1>
         <button class="ibtn ibtn-sm" data-a="toggleFavProj" data-id="${p.id}" data-tip="${p.fav ? 'Remove from favorites' : 'Add to favorites'}" aria-pressed="${p.fav}" aria-label="Favorite" style="${p.fav ? 'color:var(--amber)' : ''}">${ic('star', 15)}</button>
         <button class="pillbtn bordered" data-a="pop" data-pop="pstatus" data-id="${p.id}" aria-label="Project status" style="height:24px"><span class="pdot" style="--c:${PSTAT[p.status].c};border-radius:50%;width:7px;height:7px"></span>${PSTAT[p.status].name}${ic('chevron-down', 12)}</button>
+        ${mainLink ? `<a href="${esc(mainLink.url)}" target="_blank" rel="noopener noreferrer" class="pillbtn bordered" style="height:24px;text-decoration:none;gap:5px;color:var(--text);font-size:12px" title="Buka ${esc(mainLink.label)}">${ic('globe', 12)}<span>${esc(mainLink.label)}</span>${ic('arrow-up-right', 10)}</a>` : ''}
         <span class="sp"></span>
         <div class="row" style="gap:4px">
           <button class="row" data-a="share" data-id="${p.id}" aria-label="Members" style="gap:0">${avStack(p.members, 5, 'md')}</button>

@@ -104,9 +104,12 @@ export function renderSidebar() {
           .map(p => {
             const open = !!u.expanded[p.id];
             const on = inProj === p.id;
+            const pIconHtml = p.image
+              ? `<span class="pico pico-img" style="width:16px;height:16px;border-radius:4px;overflow:hidden;flex-shrink:0"><img src="${p.image}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" /></span>`
+              : `<span class="pico" style="--c:${pColor(p)}" data-a="toggleExpand" data-id="${p.id}" aria-label="Toggle sub-pages">${ic(p.icon, 12)}</span>`;
             return `<div class="sproj" data-proj-drop="${p.id}">
             <div class="sitem ${on ? 'on' : ''}" draggable="true" data-drag-proj="${p.id}" data-a="go" data-r="project" data-id="${p.id}" data-ctx="project" role="link" tabindex="0" ${u.collapsed ? `data-tip="${esc(p.name)}" data-tip-pos="right"` : ''}>
-              <span class="pico" style="--c:${pColor(p)}" data-a="toggleExpand" data-id="${p.id}" aria-label="Toggle sub-pages">${ic(p.icon, 12)}</span>
+              ${pIconHtml}
               <span class="trunc">${esc(p.name)}</span>
               ${p.fav ? `<span class="fav">${ic('star', 11)}</span>` : ''}
               ${p.private ? `<span class="faint" style="margin-left:4px">${ic('lock', 11)}</span>` : ''}
@@ -148,15 +151,19 @@ export function crumbs() {
   if (r === 'project') {
     const p = proj(u.params.id);
     out.push(c('Projects', 'data-a="go" data-r="projects"'));
-    if (p)
+    if (p) {
+      const pCrumbIcon = p.image
+        ? `<span class="pico pico-img" style="width:16px;height:16px;border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:4px"><img src="${p.image}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" /></span>`
+        : `<span class="pico" style="--c:${pColor(p)};width:16px;height:16px;border-radius:4px;display:grid;place-items:center;color:${pColor(p)}">${ic(p.icon, 11)}</span>`;
       out.push(
         c(
           p.name,
           `data-a="go" data-r="project" data-id="${p.id}" data-tab="overview"`,
           true,
-          `<span class="pico" style="--c:${pColor(p)};width:16px;height:16px;border-radius:4px;display:grid;place-items:center;color:${pColor(p)}">${ic(p.icon, 11)}</span>`,
+          pCrumbIcon,
         ),
       );
+    }
   } else if (r === 'member') {
     out.push(c('Members', 'data-a="go" data-r="members"'));
     out.push(c(mem(u.params.id)?.name || 'Member', '', true));

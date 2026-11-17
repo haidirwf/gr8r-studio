@@ -1,9 +1,9 @@
 /* ---------------- MODALS ---------------- */
-import { $$, MOD, ago, esc, fmtDate } from '../core/utils.js';
+import { $$, MOD, TODAY, ago, diffD, esc, fmtDate, parse } from '../core/utils.js';
 import { ic } from '../core/icons.js';
-import { PCOLORS, PICONS, PROJECT_TAGS } from '../core/constants.js';
+import { PCOLORS, PICONS, PR, PROJECT_TAGS, ST } from '../core/constants.js';
 import { D, S, mem, pColor, proj, task, teamsList } from '../core/store.js';
-import { FT, av, filePrev, lbl, linkMeta, prPill, stPill } from '../ui/helpers.js';
+import { FT, av, filePrev, lbl, prIcon, prPill, stIcon, stPill } from '../ui/helpers.js';
 import { focusKey, render } from '../shell/render.js';
 import { teamModal } from '../features/teams.js';
 import { noteModal } from '../pages/notes.js';
@@ -142,7 +142,7 @@ export function taskModal(m, H) {
   const f = S.ui.form;
   const p = proj(f.project);
   const err = S.ui.errors.title;
-  return `${H(m.edit ? 'Edit Tugas / Pengingat' : 'Tugas / Pengingat Baru', m.edit ? `<span class="mono">${task(m.edit)?.key}</span>` : '')}
+  return `${H(m.edit ? 'Edit Tugas' : 'Tugas Baru', m.edit ? `<span class="mono">${task(m.edit)?.key}</span>` : '')}
   <form class="modal-b" data-submit="submitTask" style="gap:12px">
     <div class="field"><label class="sr" for="f-title">Nama tugas atau pengingat</label><input class="input input-lg ${err ? 'is-error' : ''}" id="f-title" data-in="form" data-f="title" value="${esc(f.title)}" placeholder="Contoh: Beli perlengkapan, deadline revisi..." autofocus aria-invalid="${!!err}" aria-describedby="f-title-err" style="font-size:15px;font-weight:500">${err ? `<span class="err" id="f-title-err">${ic('circle-alert', 12)}${err}</span>` : ''}</div>
     <div class="field"><label class="sr" for="f-desc">Deskripsi</label><textarea class="textarea" id="f-desc" data-in="form" data-f="desc" placeholder="Catatan tambahan… (opsional)" rows="2">${esc(f.desc)}</textarea></div>
@@ -216,37 +216,68 @@ export function quickTaskModal(m, H) {
   const t = task(m.id);
   if (!t) return `${H('Tugas')}<div class="modal-b" style="padding:16px 20px"><div class="cal-agenda-empty">Tugas tidak ditemukan.</div></div>`;
   const p = proj(t.project);
-  const isDone = t.status === 'done';
   return `${H(p ? esc(p.name) : 'Pengingat Pribadi', t.key ? `<span class="mono">${esc(t.key)}</span>` : '')}
   <div class="modal-b" style="gap:14px;padding:16px 20px">
-    <div style="font-size:17px;font-weight:700;color:var(--text);line-height:1.4">${esc(t.title)}</div>
+    <div class="field" style="margin-bottom:0">
+      <input class="input" style="font-size:16px;font-weight:600;padding:6px 10px;height:auto;line-height:1.4" value="${esc(t.title)}" data-blur="commitDrawerTitle" data-key-enter="blur" data-id="${t.id}" placeholder="Nama tugas..." aria-label="Nama tugas">
+    </div>
     
-    <div class="row" style="gap:8px;flex-wrap:wrap">
-      <button class="pillbtn ${isDone ? 'green' : ''}" data-a="toggleDone" data-id="${t.id}">
-        ${isDone ? ic('check', 14) + ' <span>Selesai</span>' : ic('circle', 14) + ' <span>Belum Selesai</span>'}
+    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
+      <button type="button" class="pillbtn bordered" data-a="pop" data-pop="status" data-id="${t.id}" aria-label="Status: ${ST[t.status].name}" style="cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">
+        ${stIcon(t.status)}
+        <span>${ST[t.status].name}</span>
+        ${ic('chevron-down', 11)}
       </button>
-      ${t.due ? `<span class="pillbtn num">${ic('calendar', 13)}<span>Deadline: ${fmtDate(t.due, true)}</span></span>` : ''}
-      ${prPill(t.priority)}
+
+      <button type="button" class="pillbtn bordered ${t.priority === 'none' ? 'empty' : ''}" data-a="pop" data-pop="priority" data-id="${t.id}" aria-label="Prioritas: ${PR[t.priority || 'none'].name}" style="cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">
+        ${prIcon(t.priority, 13)}
+        <span>${PR[t.priority || 'none'].name}</span>
+        ${ic('chevron-down', 11)}
+      </button>
+
+      <button type="button" class="pillbtn bordered num ${t.due && t.status !== 'done' && diffD(parse(t.due), TODAY) < 0 ? 'over' : ''}" data-a="pop" data-pop="date" data-field="due" data-id="${t.id}" aria-label="Tenggat Waktu" style="cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">
+        ${ic('calendar', 13)}
+        <span>${t.due ? fmtDate(t.due, true) : 'Atur deadline'}</span>
+        ${ic('chevron-down', 11)}
+      </button>
+
+      <button type="button" class="pillbtn bordered" data-a="pop" data-pop="project" data-id="${t.id}" aria-label="Proyek" style="cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">
+        ${p ? `<span class="pdot" style="--c:${pColor(p)}"></span><span>${esc(p.name)}</span>` : `${ic('bell', 13)}<span>Pengingat Pribadi</span>`}
+        ${ic('chevron-down', 11)}
+      </button>
     </div>
 
-    ${t.desc ? `<div class="faint" style="font-size:13px;line-height:1.5;background:var(--sunken);padding:10px 12px;border-radius:6px">${esc(t.desc.replace(/<[^>]+>/g, ''))}</div>` : ''}
+    <div class="field" style="margin-bottom:0">
+      <textarea class="textarea" rows="2" data-blur="quickTaskDesc" data-id="${t.id}" placeholder="Tambah catatan atau deskripsi... (opsional)" style="font-size:13px;line-height:1.5">${esc(t.desc || '')}</textarea>
+    </div>
 
-    ${p && p.links && p.links.length ? `
+    ${t.attachments && t.attachments.length ? `
       <div style="display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--divider);padding-top:10px">
-        <span style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em">Link Lomba Terkait</span>
-        <div style="display:flex;flex-wrap:wrap;gap:6px">
-          ${p.links.map(l => {
-            const lm = linkMeta(l.type);
-            return `<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" class="pillbtn bordered" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;background:${lm.bg};color:${lm.color};border-color:${lm.border}"><span style="display:inline-flex;align-items:center">${ic(lm.icon, 13)}</span><span>${esc(l.label)}</span><span style="display:inline-flex;align-items:center;opacity:0.7">${ic('arrow-up-right', 11)}</span></a>`;
-          }).join('')}
+        <span style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em">Lampiran & Gambar (${t.attachments.length})</span>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          ${t.attachments.map(att => `
+            <div class="attc" data-a="filePreview" data-tid="${t.id}" data-aid="${att.id}" role="button" tabindex="0" style="display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--sunken);cursor:pointer;font-size:12px;max-width:220px">
+              ${att.url ? `<img src="${att.url}" alt="" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" />` : ic('paperclip', 12)}
+              <span class="trunc" style="font-weight:500">${esc(att.name)}</span>
+            </div>
+          `).join('')}
         </div>
       </div>
     ` : ''}
+
+    <div class="row" style="gap:8px;align-items:center;padding-top:2px">
+      <label class="btn btn-xs btn-secondary" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px">
+        ${ic('upload', 12)}<span>Upload Gambar/File</span>
+        <input type="file" accept="image/*,application/pdf" multiple hidden data-in="uploadFiles" data-task="${t.id}" data-project="${t.project || ''}">
+      </label>
+      <span class="faint" style="font-size:11px">Gambar otomatis dikonversi ke WebP.</span>
+    </div>
   </div>
   <div class="modal-f" style="justify-content:space-between">
-    <button class="btn btn-ghost btn-sm text-danger" data-a="deleteQuickTask" data-id="${t.id}">${ic('trash-2', 14)} Hapus</button>
+    <button class="btn btn-ghost btn-sm text-danger" data-a="deleteQuickTask" data-id="${t.id}">${ic('trash-2', 14)}<span>Hapus</span></button>
     <div class="row" style="gap:8px">
       <button class="btn btn-secondary btn-sm" data-a="closeModal">Tutup</button>
+      <button class="btn btn-ghost btn-sm" data-a="openTask" data-id="${t.id}">${ic('panel-right', 14)}<span>Buka Detail</span></button>
       ${p ? `<button class="btn btn-primary btn-sm" data-a="goProjectFromTask" data-id="${p.id}"><span>Lihat Proyek</span>${ic('arrow-right', 14)}</button>` : ''}
     </div>
   </div>`;
@@ -258,7 +289,9 @@ export function projectModal(m, H) {
   return `${H(m.edit ? 'Pengaturan Proyek' : 'Tambah Proyek Baru', m.edit ? '' : 'Kelola timeline dan kebutuhan proyek Anda.')}
   <form class="modal-b" data-submit="submitProject" style="gap:14px;overflow-x:hidden;max-width:100%;box-sizing:border-box">
     <div class="row" style="gap:10px;align-items:flex-start;min-width:0">
-      <button type="button" class="picon lg" style="--c:${PCOLORS[f.color]};cursor:default;flex-shrink:0;margin-top:22px" aria-hidden="true" tabindex="-1">${ic(f.icon, 18)}</button>
+      <button type="button" class="picon lg ${f.image ? 'picon-has-img' : ''}" style="--c:${PCOLORS[f.color]};cursor:default;flex-shrink:0;margin-top:22px;overflow:hidden" aria-hidden="true" tabindex="-1">
+        ${f.image ? `<img src="${f.image}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" />` : ic(f.icon, 18)}
+      </button>
       <div class="field grow" style="min-width:0"><label class="label" for="p-name">Nama Proyek</label><input class="input ${err ? 'is-error' : ''}" id="p-name" data-in="pform" data-f="name" value="${esc(f.name)}" placeholder="Contoh: Lomba Web Design 2026" autofocus aria-invalid="${!!err}">${err ? `<span class="err">${ic('circle-alert', 12)}${err}</span>` : ''}</div>
     </div>
     <div class="field" style="min-width:0"><label class="label" for="p-desc">Deskripsi Singkat</label><textarea class="textarea" id="p-desc" data-in="pform" data-f="desc" rows="2" placeholder="Deskripsi singkat proyek...">${esc(f.desc)}</textarea></div>
@@ -277,7 +310,26 @@ export function projectModal(m, H) {
       </div>
     </div>
     
-    <div class="field" style="min-width:0"><span class="label">Icon</span><div class="iconpick" role="radiogroup" aria-label="Icon" style="width:100%">${PICONS.map(i => `<button type="button" role="radio" aria-checked="${f.icon === i}" class="${f.icon === i ? 'on' : ''}" data-a="pformSet" data-f="icon" data-v="${i}" aria-label="${i}">${ic(i, 15)}</button>`).join('')}</div></div>
+    <div class="field" style="min-width:0">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span class="label" style="margin-bottom:0">Ikon Gambar / Logo (WebP)</span>
+        ${f.image ? `<button type="button" class="btn btn-xs btn-ghost text-danger" data-a="pformClearImage" style="padding:2px 6px;height:auto">${ic('trash-2', 12)}<span>Hapus Gambar</span></button>` : ''}
+      </div>
+      <div class="row" style="gap:12px;align-items:center;background:var(--sunken);padding:10px 12px;border-radius:var(--r);border:1px solid var(--border)">
+        <div style="width:44px;height:44px;border-radius:8px;background:var(--surface);border:1px dashed var(--border-strong);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+          ${f.image ? `<img src="${f.image}" alt="Logo" style="width:100%;height:100%;object-fit:cover;display:block" />` : `<span class="picon" style="--c:${PCOLORS[f.color]}">${ic(f.icon, 18)}</span>`}
+        </div>
+        <div class="grow" style="min-width:0">
+          <label class="btn btn-sm btn-secondary" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+            ${ic('upload', 13)}<span>${f.image ? 'Ganti Logo / Gambar' : 'Upload Logo Lomba / Proyek'}</span>
+            <input type="file" accept="image/*" hidden data-in="pformImageUpload">
+          </label>
+          <div class="faint" style="font-size:11.5px;margin-top:4px">Gambar otomatis dikrop persegi & dikonversi ke WebP.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="field" style="min-width:0"><span class="label">Icon Statis</span><div class="iconpick" role="radiogroup" aria-label="Icon" style="width:100%">${PICONS.map(i => `<button type="button" role="radio" aria-checked="${f.icon === i}" class="${f.icon === i ? 'on' : ''}" data-a="pformSet" data-f="icon" data-v="${i}" aria-label="${i}">${ic(i, 15)}</button>`).join('')}</div></div>
     
     <div class="field" style="min-width:0"><span class="label">Warna</span><div class="swatches" role="radiogroup" aria-label="Color" style="display:flex;flex-wrap:wrap;gap:8px">${Object.entries(
       PCOLORS,
@@ -412,8 +464,15 @@ export function shortcutsModal(H) {
 export function filePreviewModal(m, H) {
   const f = m.file;
   const t = FT[f.type] || FT.other;
+  const isImg = f.url && (f.type === 'img' || (f.name && /\.(png|jpe?g|webp|gif|svg|avif)$/i.test(f.name)));
   return `${H(esc(f.name), `${t.n} · ${f.size} · Uploaded by ${esc(mem(f.by)?.name || 'you')} ${ago(f.at)}`)}
-  <div class="modal-b"><div style="border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">${filePrev(f).replace('class="fprev"', 'class="fprev" style="aspect-ratio:16/9"')}</div>
-  ${m.tid ? `<div class="row faint" style="font-size:12.5px">${ic('link', 13)}Attached to <button class="link" data-a="openTask" data-id="${m.tid}">${esc(task(m.tid)?.title)}</button></div>` : ''}</div>
-  <div class="modal-f"><button class="btn btn-secondary" data-a="copyLink" data-fid="${f.id}">${ic('link', 14)}Copy link</button><span class="sp"></span><button class="btn btn-primary" data-a="closeModal">Close</button></div>`;
+  <div class="modal-b">
+    ${isImg ? `<div style="text-align:center;background:var(--sunken);padding:12px;border-radius:var(--r-lg);border:1px solid var(--border);max-height:65vh;overflow:auto"><img src="${f.url}" alt="${esc(f.name)}" style="max-width:100%;max-height:60vh;object-fit:contain;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.2)" /></div>` : `<div style="border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">${filePrev(f).replace('class="fprev"', 'class="fprev" style="aspect-ratio:16/9"')}</div>`}
+    ${m.tid ? `<div class="row faint" style="font-size:12.5px">${ic('link', 13)}Attached to <button class="link" data-a="openTask" data-id="${m.tid}">${esc(task(m.tid)?.title)}</button></div>` : ''}
+  </div>
+  <div class="modal-f">
+    ${f.url ? `<a class="btn btn-secondary btn-sm" href="${f.url}" download="${esc(f.name)}">${ic('download', 14)}<span>Unduh WebP</span></a>` : `<button class="btn btn-secondary btn-sm" data-a="copyLink" data-fid="${f.id}">${ic('link', 14)}<span>Salin Tautan</span></button>`}
+    <span class="sp"></span>
+    <button class="btn btn-primary btn-sm" data-a="closeModal">Tutup</button>
+  </div>`;
 }

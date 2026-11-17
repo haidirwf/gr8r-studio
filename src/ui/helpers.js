@@ -44,7 +44,12 @@ export function prIcon(p, s = 14) {
 export const stPill = st => `${stIcon(st)}<span>${ST[st].name}</span>`;
 export const prPill = p => `${prIcon(p)}<span>${PR[p || 'none'].name}</span>`;
 export const lbl = id => (LB[id] ? `<span class="lbl" style="--c:${LB[id].c}"><i></i>${LB[id].name}</span>` : '');
-export const pIcon = (p, cls = '', s = 15) => `<span class="picon ${cls}" style="--c:${pColor(p)}">${ic(p.icon, s)}</span>`;
+export const pIcon = (p, cls = '', s = 15) => {
+  if (p?.image) {
+    return `<span class="picon ${cls} picon-has-img" style="--c:${pColor(p)};overflow:hidden"><img src="${p.image}" alt="" class="picon-img" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block" /></span>`;
+  }
+  return `<span class="picon ${cls}" style="--c:${pColor(p)}">${ic(p?.icon || 'folder', s)}</span>`;
+};
 export const pStatus = s => `<span class="pstatus" style="--c:${PSTAT[s].c}"><i></i>${PSTAT[s].name}</span>`;
 export function dueHtml(t, withIcon = true) {
   if (!t.due) return '';
@@ -100,7 +105,9 @@ export function fsize(b) {
 export function filePrev(f) {
   const t = FT[f.type] || FT.other;
   let art;
-  if (f.type === 'img')
+  if (f.url && (f.type === 'img' || (f.name && /\.(png|jpe?g|webp|gif|svg|avif)$/i.test(f.name)))) {
+    art = `<div class="art" style="padding:0;overflow:hidden"><img src="${f.url}" alt="${esc(f.name)}" style="width:100%;height:100%;object-fit:cover;display:block" /></div>`;
+  } else if (f.type === 'img')
     art = `<div class="art" style="padding:0;overflow:hidden;background:linear-gradient(135deg,color-mix(in srgb,${t.c} 35%,var(--surface)),color-mix(in srgb,${t.c} 10%,var(--surface)))"><svg viewBox="0 0 100 60" preserveAspectRatio="none" style="width:100%;height:100%"><path d="M0 60 L30 28 L52 46 L70 32 L100 58 L100 60Z" fill="color-mix(in srgb,${t.c} 45%,var(--surface))"/><circle cx="76" cy="16" r="7" fill="color-mix(in srgb,${t.c} 30%,var(--surface))"/></svg></div>`;
   else if (f.type === 'sheet') art = `<div class="art" style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px">${'<i></i>'.repeat(20)}</div>`;
   else if (f.type === 'fig')

@@ -1,7 +1,7 @@
 /* =====================================================================
    ACTIONS · INPUT HANDLERS · DRAG & DROP · KEYBOARD · INIT
    ===================================================================== */
-import { $, $$, TODAY, addD, dOff, esc, fmtDate, isUuid, iso, parse, uid, uuid } from '../core/utils.js';
+import { $, $$, TODAY, addD, cropToWebPSquare, dOff, esc, fileToWebP, fmtDate, isUuid, iso, parse, uid, uuid } from '../core/utils.js';
 import { PR, PSTAT, ST } from '../core/constants.js';
 import {
   applyUserSession,
@@ -619,8 +619,29 @@ IN.form = el => {
 IN.formMore = el => {
   S.ui.form.more = el.checked;
 };
-IN.formFiles = el => {
-  [...el.files].forEach(f => S.ui.form.files.push({ name: f.name, size: fsize(f.size), type: fileType(f.name) }));
+IN.formFiles = async el => {
+  const files = [...el.files];
+  for (const f of files) {
+    if (f.type && f.type.startsWith('image/')) {
+      try {
+        const webpUrl = await fileToWebP(f, 1200, 0.85);
+        const baseName = f.name.replace(/\.[^/.]+$/, '') + '.webp';
+        const estBytes = Math.round((webpUrl.length * 3) / 4);
+        S.ui.form.files.push({
+          id: uid('f'),
+          name: baseName,
+          size: fsize(estBytes),
+          type: 'img',
+          url: webpUrl,
+        });
+      } catch (err) {
+        console.error(err);
+        S.ui.form.files.push({ name: f.name, size: fsize(f.size), type: fileType(f.name) });
+      }
+    } else {
+      S.ui.form.files.push({ name: f.name, size: fsize(f.size), type: fileType(f.name) });
+    }
+  }
   render();
 };
 KEY.formAddSub = el => {
@@ -651,7 +672,7 @@ A.submitTask = () => {
     return;
   }
   S.ui.errors = {};
-  const files = f.files.map(x => ({ id: uid('a'), name: x.name, type: x.type, size: x.size, by: D().me, at: Date.now() }));
+  const files = f.files.map(x => ({ id: uid('a'), name: x.name, type: x.type, size: x.size, url: x.url || null, by: D().me, at: Date.now() }));
   const base = {
     title,
     project: f.project,
@@ -785,6 +806,11 @@ BLUR.commitDrawerTitle = el => {
   const v = el.value.trim();
   if (t && v && v !== t.title) updateTask(t.id, { title: v });
 };
+BLUR.quickTaskDesc = el => {
+  const t = task(el.dataset.id);
+  const v = el.value.trim();
+  if (t && v !== (t.desc || '')) updateTask(t.id, { desc: v });
+};
 KEY.blur = el => el.blur();
 
 /* subtasks */
@@ -840,18 +866,36 @@ A.previewFile = el => {
   S.ui.pop = null;
   if (f) openModal({ type: 'filePreview', file: f, tid: f.task });
 };
-export function handleFiles(files, ctx) {
+export async function handleFiles(files, ctx) {
   if (!files || !files.length) return;
   if (S.ui.offline) {
     toast("Upload failed — you're offline.", { kind: 'err', action: 'Try again', onAction: () => {} });
     return;
   }
   S.ui.uploads = S.ui.uploads || [];
-  [...files].forEach(file => {
-    const up = { id: uid('u'), name: file.name, size: fsize(file.size), project: ctx.project, task: ctx.task, pct: 0 };
+  const fileList = [...files];
+  for (const file of fileList) {
+    let finalUrl = null;
+    let finalName = file.name;
+    let finalType = fileType(file.name);
+    let finalSize = fsize(file.size);
+
+    if (file.type && file.type.startsWith('image/')) {
+      try {
+        finalUrl = await fileToWebP(file, 1200, 0.85);
+        finalName = file.name.replace(/\.[^/.]+$/, '') + '.webp';
+        finalType = 'img';
+        const estBytes = Math.round((finalUrl.length * 3) / 4);
+        finalSize = fsize(estBytes);
+      } catch (err) {
+        console.error('WebP error:', err);
+      }
+    }
+
+    const up = { id: uid('u'), name: finalName, size: finalSize, project: ctx.project, task: ctx.task, pct: 0 };
     S.ui.uploads.push(up);
     const iv = setInterval(() => {
-      up.pct = Math.min(100, up.pct + 9 + Math.round(Math.random() * 22));
+      up.pct = Math.min(100, up.pct + 25 + Math.round(Math.random() * 25));
       const bar = document.getElementById('upbar-' + up.id),
         pc = document.getElementById('upct-' + up.id);
       if (bar) bar.style.setProperty('--p', up.pct / 100);
@@ -859,19 +903,22 @@ export function handleFiles(files, ctx) {
       if (up.pct >= 100) {
         clearInterval(iv);
         S.ui.uploads = S.ui.uploads.filter(x => x !== up);
-        const rec = { id: uid('f'), name: up.name, type: fileType(up.name), size: up.size, by: D().me, at: Date.now() };
+        const rec = { id: uid('f'), name: up.name, type: finalType, size: up.size, url: finalUrl, by: D().me, at: Date.now() };
         D().files.unshift({ ...rec, project: up.project, task: up.task || null });
         if (up.task) {
           const t = task(up.task);
-          t.attachments.push(rec);
-          logAct('added a file to', t, up.name);
+          if (t) {
+            t.attachments = t.attachments || [];
+            t.attachments.push(rec);
+            logAct('added a file to', t, up.name);
+          }
         }
         save();
         render();
         toast(`Uploaded ${up.name}`);
       }
-    }, 220);
-  });
+    }, 120);
+  }
   render();
 }
 IN.uploadFiles = el => {
@@ -1306,8 +1353,9 @@ A.deleteQuickTask = el => {
   const id = el.dataset.id;
   closeModal();
   mutate(() => {
-    D().tasks = D().tasks.filter(t => t.id !== id);
+    deleteTasks([id]);
   });
+  flushCloudSync();
   toast('Tugas dihapus');
 };
 A.newProject = () => {
@@ -1316,6 +1364,7 @@ A.newProject = () => {
     desc: '',
     icon: 'trophy',
     color: 'indigo',
+    image: null,
     team: me().team,
     lead: D().me,
     due: dOff(14),
@@ -1343,6 +1392,7 @@ A.editProject = el => {
     desc: p.desc,
     icon: p.icon,
     color: p.color,
+    image: p.image || null,
     team: p.team,
     lead: p.lead,
     due: p.due,
@@ -1355,6 +1405,23 @@ A.editProject = el => {
   };
   S.ui.errors = {};
   openModal({ type: 'project', edit: p.id });
+};
+IN.pformImageUpload = async el => {
+  const file = el.files && el.files[0];
+  if (!file) return;
+  try {
+    const webpUrl = await cropToWebPSquare(file, 160, 0.9);
+    S.ui.pform.image = webpUrl;
+    render();
+    toast('Logo berhasil dipasang (WebP)');
+  } catch (err) {
+    console.error(err);
+    toast('Gagal memproses gambar logo', { kind: 'err' });
+  }
+};
+A.pformClearImage = () => {
+  S.ui.pform.image = null;
+  render();
 };
 A.openProjectLink = (el, e) => {
   if (e) {
@@ -1455,6 +1522,7 @@ export function createProject(f, tmplId) {
     name: f.name,
     icon: f.icon,
     color: f.color,
+    image: f.image || null,
     status: 'planning',
     team: f.team,
     lead: f.lead,
@@ -1485,40 +1553,18 @@ export function createProject(f, tmplId) {
   );
   return p;
 }
-A.pformToggleTag = el => {
-  const tag = el.dataset.tag;
-  if (!tag) return;
-  if (!Array.isArray(S.ui.pform.tags)) S.ui.pform.tags = [];
-  const idx = S.ui.pform.tags.indexOf(tag);
-  if (idx >= 0) {
-    S.ui.pform.tags.splice(idx, 1);
+IN.pformTagSelect = el => {
+  if (el.value === '__custom__') {
+    const val = prompt('Masukkan nama tag proyek baru:');
+    if (val && val.trim()) {
+      S.ui.pform.tags = [val.trim()];
+    }
+  } else if (el.value) {
+    S.ui.pform.tags = [el.value];
   } else {
-    S.ui.pform.tags.push(tag);
+    S.ui.pform.tags = [];
   }
   render();
-};
-A.pformAddCustomTag = () => {
-  const input = $('#p-custom-tag');
-  const val = (input?.value || '').trim();
-  if (!val) return;
-  if (!Array.isArray(S.ui.pform.tags)) S.ui.pform.tags = [];
-  if (!S.ui.pform.tags.includes(val)) {
-    S.ui.pform.tags.push(val);
-  }
-  if (input) input.value = '';
-  render();
-};
-A.pformRemoveTag = el => {
-  const tag = el.dataset.tag;
-  if (!tag || !Array.isArray(S.ui.pform.tags)) return;
-  S.ui.pform.tags = S.ui.pform.tags.filter(t => t !== tag);
-  render();
-};
-KEY.pformCustomTag = e => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    A.pformAddCustomTag();
-  }
 };
 A.submitProject = () => {
   const m = S.ui.modals[S.ui.modals.length - 1];
@@ -1526,7 +1572,7 @@ A.submitProject = () => {
   f.name = ($('#p-name')?.value || '').trim();
   f.desc = $('#p-desc')?.value || '';
   if (!f.name) {
-    S.ui.errors.pname = 'Beri nama untuk proyek / lomba';
+    S.ui.errors.pname = 'Beri nama untuk proyek';
     render();
     $('#p-name')?.focus();
     return;
@@ -1538,10 +1584,10 @@ A.submitProject = () => {
   const socUrl = ($('#p-link-social')?.value || '').trim();
 
   const collectedLinks = [];
-  if (gbUrl) collectedLinks.push({ id: uid('l'), type: 'guidebook', label: 'Juknis Lomba (PDF)', url: gbUrl.startsWith('http') ? gbUrl : 'https://' + gbUrl });
-  if (subUrl) collectedLinks.push({ id: uid('l'), type: 'submission', label: 'Form Pengumpulan', url: subUrl.startsWith('http') ? subUrl : 'https://' + subUrl });
-  if (grpUrl) collectedLinks.push({ id: uid('l'), type: 'group', label: 'Grup Koordinasi (WA/Discord)', url: grpUrl.startsWith('http') ? grpUrl : 'https://' + grpUrl });
-  if (socUrl) collectedLinks.push({ id: uid('l'), type: 'social', label: 'Instagram / Info Lomba', url: socUrl.startsWith('http') ? socUrl : 'https://' + socUrl });
+  if (gbUrl) collectedLinks.push({ id: uid('l'), type: 'guidebook', label: 'Buku Panduan', url: gbUrl.startsWith('http') ? gbUrl : 'https://' + gbUrl });
+  if (subUrl) collectedLinks.push({ id: uid('l'), type: 'submission', label: 'Formulir Pengumpulan', url: subUrl.startsWith('http') ? subUrl : 'https://' + subUrl });
+  if (grpUrl) collectedLinks.push({ id: uid('l'), type: 'group', label: 'Grup Koordinasi', url: grpUrl.startsWith('http') ? grpUrl : 'https://' + grpUrl });
+  if (socUrl) collectedLinks.push({ id: uid('l'), type: 'social', label: 'Media Sosial Panitia', url: socUrl.startsWith('http') ? socUrl : 'https://' + socUrl });
 
   f.links = collectedLinks;
 
@@ -1554,6 +1600,7 @@ A.submitProject = () => {
           desc: f.desc,
           icon: f.icon,
           color: f.color,
+          image: f.image !== undefined ? f.image : p.image || null,
           team: f.team,
           lead: f.lead,
           due: f.due,
@@ -1567,7 +1614,7 @@ A.submitProject = () => {
       flushCloudSync();
       S.ui.modals.pop();
       render();
-      toast('Proyek / Lomba diperbarui');
+      toast('Proyek berhasil diperbarui');
     }
     return;
   }

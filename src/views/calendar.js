@@ -2,7 +2,7 @@
 import { MONL, TODAY, WD, addD, diffD, esc, fmtDate, iso, parse, sod } from '../core/utils.js';
 import { ic } from '../core/icons.js';
 import { D, S, allTasks, pColor, proj } from '../core/store.js';
-import { av, prIcon, stIcon } from '../ui/helpers.js';
+import { prIcon, stIcon } from '../ui/helpers.js';
 import { fxc } from '../shell/render.js';
 import { applyView, viewOf, viewToolbar } from '../shell/view-engine.js';
 
@@ -19,8 +19,8 @@ function renderCalItem(it) {
     const daysLeft = diffD(parse(p.due), TODAY);
     const isOver = daysLeft < 0 && p.status !== 'complete';
     return `<div class="cal-agenda-card prj-agenda-card" style="--c:${pColor(p)}" data-a="go" data-r="project" data-id="${p.id}" data-tab="overview" role="button" tabindex="0">
-      <div class="cal-agenda-check" style="background:var(--c);color:#fff;border-color:var(--c);cursor:pointer" title="Deadline Proyek">
-        ${ic('flag', 13)}
+      <div class="cal-agenda-check" style="background:var(--c);color:#fff;border-color:var(--c);cursor:pointer;overflow:hidden" title="Deadline Proyek">
+        ${p.image ? `<img src="${p.image}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" />` : ic('flag', 13)}
       </div>
       <div class="cal-agenda-info grow trunc">
         <div class="row" style="gap:6px;align-items:center;margin-bottom:2px">
@@ -48,7 +48,7 @@ function renderCalItem(it) {
     <div class="cal-agenda-info grow trunc">
       <div class="cal-agenda-title-text ${isDone ? 'done' : ''}">${esc(t.title)}</div>
       <div class="cal-agenda-meta">
-        <span class="pdot" style="--c:${p ? pColor(p) : 'var(--amber, #f59e0b)'}"></span>
+        ${p?.image ? `<img src="${p.image}" alt="" style="width:14px;height:14px;border-radius:3px;object-fit:cover;flex-shrink:0" />` : `<span class="pdot" style="--c:${p ? pColor(p) : 'var(--amber, #f59e0b)'}"></span>`}
         <span class="trunc ptag">${esc(p?.name || 'Pengingat Pribadi')}</span>
         ${t.due ? `<span class="cal-meta-badge ${isOver ? 'overdue' : ''}">${isOver ? ic('alert-circle', 11) + ' ' : ''}${fmtDate(t.due)}</span>` : ''}
         ${prIcon(t.priority, 12)}
@@ -82,8 +82,14 @@ export function calendarHtml(ts, opt = {}) {
     const t = it.t;
     const p = proj(t.project);
     const cColor = p ? pColor(p) : 'var(--amber, #f59e0b)';
-    const cIcon = t.status === 'done' ? stIcon('done', 11) : (!p ? ic('bell', 11) : prIcon(t.priority, 11));
-    return `<button class="cev ${t.status === 'done' ? 'done' : ''}${fxc('moved', t.id)}" style="--c:${cColor}" draggable="true" data-drag-cal="${t.id}" data-a="openQuickTask" data-id="${t.id}" data-ctx="task" title="${esc(t.title)}">${cIcon}<span class="trunc">${esc(t.title)}</span>${av(t.assignee, '', false)}</button>`;
+    const cIcon = t.status === 'done'
+      ? stIcon('done', 11)
+      : (!p
+        ? ic('bell', 11)
+        : (p?.image
+          ? `<img src="${p.image}" alt="" style="width:11px;height:11px;border-radius:2px;object-fit:cover;flex-shrink:0;margin-right:2px;display:inline-block;vertical-align:middle" />`
+          : prIcon(t.priority, 11)));
+    return `<button class="cev ${t.status === 'done' ? 'done' : ''}${fxc('moved', t.id)}" style="--c:${cColor}" draggable="true" data-drag-cal="${t.id}" data-a="openQuickTask" data-id="${t.id}" data-ctx="task" title="${esc(t.title)}">${cIcon}<span class="trunc">${esc(t.title)}</span></button>`;
   };
 
   const label = `${MONL[cur.getMonth()]} ${cur.getFullYear()}`;

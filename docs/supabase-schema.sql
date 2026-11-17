@@ -51,6 +51,7 @@ create table if not exists public.projects (
 alter table public.projects add column if not exists archived boolean default false not null;
 alter table public.projects add column if not exists archived_at timestamptz;
 alter table public.projects add column if not exists tags text[] default '{}'::text[] not null;
+alter table public.projects add column if not exists image text;
 
 -- ------------------------------------------------------------------------------
 -- 3. TABEL: TASKS

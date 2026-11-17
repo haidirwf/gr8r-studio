@@ -59,6 +59,17 @@
   --sz: 36px;
   border-radius: 9px;
 }
+.picon.picon-has-img {
+  background: transparent;
+  overflow: hidden;
+}
+.picon.picon-has-img .picon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  display: block;
+}
 .pcard .more {
   position: absolute;
   top: 10px;

@@ -278,6 +278,10 @@ export function onAuthStateChange(callback) {
 export function mapProjectToRow(p, userId) {
   const id = isUuid(p.id) ? p.id : (p.id = uuid());
   const tags = Array.isArray(p.tags) ? p.tags : [];
+  const links = Array.isArray(p.links) ? [...p.links] : [];
+  if (p.image && !links.some(l => l.type === '__image_meta__')) {
+    links.push({ id: '__image__', type: '__image_meta__', label: 'image', url: p.image });
+  }
   return {
     id: String(id),
     user_id: userId,
@@ -286,6 +290,7 @@ export function mapProjectToRow(p, userId) {
     category: ['lomba', 'skl', 'umum'].includes(p.category) ? p.category : 'umum',
     icon: p.icon || 'folder',
     color: p.color || 'indigo',
+    image: p.image || null,
     status: p.status || 'active',
     due: p.due ? new Date(p.due).toISOString() : null,
     start_date: p.start ? new Date(p.start).toISOString() : null,
@@ -295,7 +300,7 @@ export function mapProjectToRow(p, userId) {
     archived_at: p.archivedAt
       ? (typeof p.archivedAt === 'number' ? new Date(p.archivedAt).toISOString() : p.archivedAt)
       : (p.archived ? new Date().toISOString() : null),
-    links: Array.isArray(p.links) ? p.links : [],
+    links,
     milestones: Array.isArray(p.milestones) ? p.milestones : [],
     tags,
   };
@@ -313,6 +318,11 @@ export function mapRowToProject(row) {
       }
     }
   }
+  let image = row.image || null;
+  if (!image && Array.isArray(row.links)) {
+    const imgMeta = row.links.find(l => l.type === '__image_meta__');
+    if (imgMeta && imgMeta.url) image = imgMeta.url;
+  }
   return {
     id: row.id,
     key: (row.name || 'PRJ').toUpperCase().slice(0, 5),
@@ -321,6 +331,7 @@ export function mapRowToProject(row) {
     category: row.category || 'umum',
     icon: row.icon || 'folder',
     color: row.color || 'indigo',
+    image,
     status: row.status || 'active',
     due: row.due ? row.due.slice(0, 10) : null,
     start: row.start_date ? row.start_date.slice(0, 10) : null,
@@ -328,7 +339,7 @@ export function mapRowToProject(row) {
     fav: Boolean(row.fav),
     archived: Boolean(row.archived),
     archivedAt: row.archived_at ? new Date(row.archived_at).getTime() : null,
-    links: Array.isArray(row.links) ? row.links.filter(l => l.type !== '__tags_meta__') : [],
+    links: Array.isArray(row.links) ? row.links.filter(l => l.type !== '__tags_meta__' && l.type !== '__image_meta__') : [],
     milestones: Array.isArray(row.milestones) ? row.milestones : [],
     tags: Array.isArray(tags) ? tags : [],
     members: [row.user_id],
@@ -343,11 +354,12 @@ export function mapRowToProject(row) {
  */
 async function upsertProjectsWithFallback(rows) {
   const { error } = await supabase.from('projects').upsert(rows);
-  if (error && (error.code === '42703' || String(error.message).includes('tags'))) {
+  if (error && (error.code === '42703' || String(error.message).includes('tags') || String(error.message).includes('image'))) {
     const fallbackRows = rows.map(r => {
       const copy = { ...r };
       const tags = copy.tags || [];
       delete copy.tags;
+      delete copy.image;
       const linksWithoutMeta = (copy.links || []).filter(l => l.type !== '__tags_meta__');
       if (tags.length) {
         linksWithoutMeta.push({ id: '__tags__', type: '__tags_meta__', label: 'tags', url: JSON.stringify(tags) });

@@ -11,7 +11,6 @@ import { listHtml } from '../components/task-list.js';
 import { page404, stateDenied } from './errors.js';
 import { projActivity, projOverview } from '../views/project-overview.js';
 import { boardHtml } from '../views/board.js';
-import { tableHtml } from '../views/table.js';
 import { calendarHtml } from '../views/calendar.js';
 import { timelineHtml, tlControls } from '../views/timeline.js';
 import { filesHtml } from '../views/files.js';
@@ -20,7 +19,6 @@ export const PTABS = [
   ['overview', 'Overview', 'layout-dashboard'],
   ['board', 'Board', 'square-kanban'],
   ['list', 'List', 'list'],
-  ['table', 'Table', 'table-2'],
   ['calendar', 'Calendar', 'calendar'],
   ['timeline', 'Timeline', 'chart-gantt'],
   ['files', 'Files', 'paperclip'],
@@ -93,13 +91,13 @@ export function taskViewBody(type, ts, key, p) {
     'No tasks match these filters.',
     `<button class="btn btn-secondary btn-sm" data-a="clearFilters" data-key="${key}">Clear filters</button>`,
   );
+  if (type === 'table') type = 'board';
   if (type === 'board') return viewToolbar(key, { group: false, right: addBtn }) + (noTasks ? emptyAll : boardHtml(ts, key, { project: p.id }));
   if (type === 'list')
     return (
       viewToolbar(key, { right: addBtn }) +
       `<div class="list-wrap">${noTasks ? emptyAll : !ts.length ? emptyFilter : listHtml(groupTasks(ts, v.group), key, { project: p.id })}</div>`
     );
-  if (type === 'table') return viewToolbar(key, { cols: true, right: addBtn }) + (noTasks ? emptyAll : tableHtml(ts, key, p));
   if (type === 'calendar') return viewToolbar(key, { group: false, right: addBtn }) + calendarHtml(ts, { key, project: p.id, events: true });
   if (type === 'timeline') return viewToolbar(key, { group: false, right: addBtn, extra: tlControls(key) }) + timelineHtml(ts, key, p);
   return page404();

@@ -18,7 +18,7 @@ function renderCalItem(it) {
     const p = it.prj;
     const daysLeft = diffD(parse(p.due), TODAY);
     const isOver = daysLeft < 0 && p.status !== 'complete';
-    return `<div class="cal-agenda-card prj-agenda-card" style="--c:${pColor(p)}" data-a="go" data-r="project" data-id="${p.id}" data-tab="overview" role="button" tabindex="0">
+    return `<div class="cal-agenda-card prj-agenda-card" style="--c:${pColor(p)}" data-a="go" data-r="project" data-id="${p.id}" data-tab="overview" data-ctx="project" role="button" tabindex="0">
       <div class="cal-agenda-check" style="background:var(--c);color:#fff;border-color:var(--c);cursor:pointer;overflow:hidden" title="Deadline Proyek">
         ${p.image ? `<img src="${p.image}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" />` : ic('flag', 13)}
       </div>
@@ -73,11 +73,11 @@ export function calendarHtml(ts, opt = {}) {
   const chip = it => {
     if (it.prj) {
       const p = it.prj;
-      return `<button class="cev prj-due" style="--c:${pColor(p)}" data-a="go" data-r="project" data-id="${p.id}" data-tab="overview" title="Deadline Proyek: ${esc(p.name)}">${ic('flag', 11)}<span class="trunc">Deadline: ${esc(p.name)}</span></button>`;
+      return `<button class="cev prj-due" style="--c:${pColor(p)}" data-a="go" data-r="project" data-id="${p.id}" data-tab="overview" data-ctx="project" title="Deadline Proyek: ${esc(p.name)}">${ic('flag', 11)}<span class="trunc">Deadline: ${esc(p.name)}</span></button>`;
     }
     if (it.ev) {
       const p = proj(it.ev.project);
-      return `<button class="cev event" style="--c:${pColor(p)}" data-a="pop" data-pop="event" data-id="${it.ev.id}" title="${esc(it.ev.title)} · ${it.ev.time}"><span class="num faint" style="font-size:11px">${it.ev.time}</span><span class="trunc">${esc(it.ev.title)}</span></button>`;
+      return `<button class="cev event" style="--c:${pColor(p)}" data-a="pop" data-pop="event" data-id="${it.ev.id}" ${p ? `data-ctx="project" data-id="${p.id}"` : ''} title="${esc(it.ev.title)} · ${it.ev.time}"><span class="num faint" style="font-size:11px">${it.ev.time}</span><span class="trunc">${esc(it.ev.title)}</span></button>`;
     }
     const t = it.t;
     const p = proj(t.project);
@@ -131,7 +131,7 @@ export function calendarHtml(ts, opt = {}) {
           const isToday = diffD(d, TODAY) === 0;
           const isSelected = ds === selectedDate;
           const isOut = d.getMonth() !== cur.getMonth();
-          return `<div class="cday ${isOut ? 'out' : ''} ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" data-drop-day="${ds}" data-a="selectCalDay" data-date="${ds}">
+          return `<div class="cday ${isOut ? 'out' : ''} ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" data-drop-day="${ds}" data-a="selectCalDay" data-date="${ds}" data-ctx="calday" data-id="${ds}">
             <div class="cday-top">
               <span class="dn" ${isToday ? 'aria-current="date"' : ''}>${d.getDate()}</span>
               <button class="ibtn ibtn-xs add hide-m" data-a="newTask" data-due="${ds}" ${opt.project ? `data-project="${opt.project}"` : ''} aria-label="Tambah tugas pada ${fmtDate(ds)}">${ic('plus', 13)}</button>

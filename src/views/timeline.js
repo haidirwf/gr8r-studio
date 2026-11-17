@@ -125,9 +125,11 @@ export function timelineHtml(ts, key, p) {
   if (!rows.length)
     return empty(
       'chart-gantt',
-      'Nothing on the timeline',
-      'Give tasks a start and due date to see them here.',
-      `<button class="btn btn-primary btn-sm" data-a="newTask" ${p ? `data-project="${p.id}"` : ''}>${ic('plus', 14)}New task</button>`,
+      'Belum ada tugas di Timeline',
+      ts.length
+        ? `${ts.length} tugas ditemukan tetapi belum memiliki tenggat waktu (due date). Beri tanggal deadline pada tugas agar muncul di grafik timeline.`
+        : 'Beri tugas tanggal mulai atau tenggat waktu agar dapat muncul di grafik timeline.',
+      `<button class="btn btn-primary btn-sm" data-a="newTask" ${p ? `data-project="${p.id}"` : ''}>${ic('plus', 14)}Tambah Tugas</button>`,
     );
   const todayX = diffD(TODAY, rs) * dw;
   return `<div class="tl" data-tl-today="${todayX}" data-tl-key="${key}">

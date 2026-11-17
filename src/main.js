@@ -31,7 +31,6 @@ import './pages/errors.js';
 import './pages/project.js';
 import './views/project-overview.js';
 import './views/board.js';
-import './views/table.js';
 import './views/calendar.js';
 import './views/timeline.js';
 import './views/files.js';

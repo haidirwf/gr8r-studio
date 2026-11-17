@@ -6,7 +6,6 @@ import { D, S, allTasks, canSee, me, mem, note, pColor, proj, task, visibleProje
 import { av, avStack, prIcon, stIcon } from '../ui/helpers.js';
 import { focusKey, render } from '../shell/render.js';
 import { FIELDS, viewOf } from '../shell/view-engine.js';
-import { TCOLS } from '../views/table.js';
 import { startOfWeek } from '../views/calendar.js';
 import { ctxMenu } from './context-menu.js';
 import { NOTE_COLORS } from '../pages/notes.js';
@@ -296,16 +295,7 @@ export function popHtml(p) {
       break;
     }
     case 'cols': {
-      const v = viewOf(p.key);
-      inner =
-        `<div class="mh">Visible columns</div>` +
-        TCOLS.filter(c => c[0] !== 'title')
-          .map(
-            c =>
-              `<label class="mi" style="cursor:pointer"><input type="checkbox" class="check" data-a="toggleCol2" data-key="${p.key}" data-v="${c[0]}" ${v.hidden.includes(c[0]) ? '' : 'checked'}>${c[1]}</label>`,
-          )
-          .join('') +
-        `<div class="msep"></div><button class="mi" data-a="resetCols" data-key="${p.key}">${ic('rotate-ccw', 14)}Reset widths</button>`;
+      inner = '';
       break;
     }
     case 'filter':
@@ -338,19 +328,19 @@ export function popHtml(p) {
         projs
           .map(
             x =>
-              `<button class="mi" data-a="go" data-r="project" data-id="${x.id}" data-tab="overview" style="font-weight:600"><span class="pdot" style="--c:${pColor(x)}"></span><span class="trunc">Deadline: ${esc(x.name)}</span></button>`,
+              `<button class="mi" data-a="go" data-r="project" data-id="${x.id}" data-tab="overview" data-ctx="project" style="font-weight:600"><span class="pdot" style="--c:${pColor(x)}"></span><span class="trunc">Deadline: ${esc(x.name)}</span></button>`,
           )
           .join('') +
         evs
           .map(
             e =>
-              `<button class="mi" data-a="go" data-r="project" data-id="${e.project}" data-tab="calendar">${ic('clock', 14)}${esc(e.title)}<span class="r">${e.time}</span></button>`,
+              `<button class="mi" data-a="go" data-r="project" data-id="${e.project}" data-tab="overview" data-ctx="project">${ic('clock', 14)}${esc(e.title)}<span class="r">${e.time}</span></button>`,
           )
           .join('') +
         ts
           .map(
             x =>
-              `<button class="mi" data-a="openQuickTask" data-id="${x.id}">${stIcon(x.status)}<span class="trunc">${esc(x.title)}</span><span class="r">${av(x.assignee, 'sm', false)}</span></button>`,
+              `<button class="mi" data-a="openQuickTask" data-id="${x.id}" data-ctx="task">${stIcon(x.status)}<span class="trunc">${esc(x.title)}</span></button>`,
           )
           .join('');
       style = 'width:280px';

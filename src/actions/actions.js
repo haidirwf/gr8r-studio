@@ -206,7 +206,7 @@ A.go = el => {
   const p = {};
   if (el.dataset.id) p.id = el.dataset.id;
   if (el.dataset.tab) p.tab = el.dataset.tab;
-  else if (r === 'project') p.tab = S.prefs.defaultTab || 'board';
+  else if (r === 'project') p.tab = (S.prefs.defaultTab === 'table' ? 'board' : S.prefs.defaultTab) || 'board';
   if (el.dataset.sec) p.sec = el.dataset.sec;
   S.ui.palette = null;
   const tabOnly = r === 'project' && S.ui.route === 'project' && S.ui.params.id === p.id;
@@ -220,7 +220,7 @@ A.back = () => {
   }
 };
 A.reload = () => render();
-A.openProject = el => go('project', { id: el.dataset.id, tab: S.prefs.defaultTab || 'board' });
+A.openProject = el => go('project', { id: el.dataset.id, tab: (S.prefs.defaultTab === 'table' ? 'board' : S.prefs.defaultTab) || 'board' });
 A.set = el => {
   const k = el.dataset.k;
   let v = el.dataset.v;
@@ -1281,8 +1281,10 @@ A.calNav = el => {
   render();
 };
 A.selectCalDay = el => {
-  if (el.dataset.date) {
-    S.ui.calSelectedDate = el.dataset.date;
+  const d = el.dataset.date || el.dataset.id;
+  if (d) {
+    S.ui.pop = null;
+    S.ui.calSelectedDate = d;
     render();
   }
 };
@@ -1344,6 +1346,23 @@ A.openQuickTask = el => {
   });
 };
 A.toggleTaskDone = el => A.toggleDone(el);
+A.newTaskForProj = el => {
+  const pid = el.dataset.id;
+  S.ui.pop = null;
+  A.newTask({ dataset: { project: pid } });
+};
+A.newCalTask = el => {
+  const due = el.dataset.id || el.dataset.date;
+  S.ui.pop = null;
+  A.newTask({ dataset: { due } });
+};
+A.newCalProject = el => {
+  const due = el.dataset.id || el.dataset.date;
+  S.ui.pop = null;
+  A.newProject();
+  if (due) S.ui.pform.due = due;
+  render();
+};
 A.goProjectFromTask = el => {
   const pid = el.dataset.id;
   closeModal();
@@ -2652,7 +2671,7 @@ A.onbFinish = () => {
       D().ws = { name: o.ws.trim(), url: o.url || 'workspace', c };
       if (!D().workspaces.some(w => w.name === D().ws.name)) D().workspaces.push({ id: uid('w'), name: D().ws.name, c, plan: 'Free' });
     }
-    S.prefs.defaultTab = { kanban: 'board', list: 'list', timeline: 'timeline', table: 'table' }[o.team] || 'board';
+    S.prefs.defaultTab = { kanban: 'board', list: 'list', timeline: 'timeline' }[o.team] || 'board';
     const tm = TEMPLATES.find(t => t.id === o.tmpl) || TEMPLATES[2];
     p = createProject(
       {

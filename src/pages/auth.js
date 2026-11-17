@@ -106,11 +106,10 @@ export function renderOnboarding() {
     <div class="field"><label class="label" for="o-url">Workspace URL</label><div class="row" style="gap:0"><span class="input input-lg" style="width:auto;background:var(--surface-2);border-right:0;border-radius:6px 0 0 6px;display:flex;align-items:center;color:var(--text-2)">gr8rstudio.com/</span><input class="input input-lg" id="o-url" value="${esc(o.url || '')}" data-in="onbUrl" style="border-radius:0 6px 6px 0" placeholder="gr8rstudio"></div>${o.url ? `<span class="hint" style="color:var(--green);display:flex;gap:4px;align-items:center">${ic('check', 12)}gr8rstudio.com/${esc(o.url)} is available</span>` : ''}</div>${nav()}`;
   }
   if (st === 2)
-    body = `<h1>How does your team work?</h1><p class="sub">We'll set your default project view.</p><div class="opts" role="radiogroup" style="grid-template-columns:repeat(2,minmax(0,1fr))">${[
+    body = `<h1>How does your team work?</h1><p class="sub">We'll set your default project view.</p><div class="opts" role="radiogroup" style="grid-template-columns:repeat(3,minmax(0,1fr))">${[
       ['kanban', 'square-kanban', 'Boards', 'Move cards through stages'],
       ['list', 'list-checks', 'Lists', 'Checklists and priorities'],
       ['timeline', 'chart-gantt', 'Timelines', 'Plan with dates & dependencies'],
-      ['table', 'table-2', 'Tables', 'Spreadsheet-style tracking'],
     ]
       .map(x => opt('team', ...x))
       .join('')}</div>

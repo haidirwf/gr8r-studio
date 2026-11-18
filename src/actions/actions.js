@@ -1764,10 +1764,10 @@ A.submitProject = () => {
   const socUrl = (f.social || $('#p-link-social')?.value || '').trim();
 
   const collectedLinks = [];
-  if (uiUrl) collectedLinks.push({ id: uid('l'), type: 'ui', label: 'Desain UI / Prototype', url: uiUrl.startsWith('http') ? uiUrl : 'https://' + uiUrl });
-  if (uxUrl) collectedLinks.push({ id: uid('l'), type: 'ux', label: 'Desain & Riset UX', url: uxUrl.startsWith('http') ? uxUrl : 'https://' + uxUrl });
+  if (uiUrl) collectedLinks.push({ id: uid('l'), type: 'ui', label: 'Desain UI', url: uiUrl.startsWith('http') ? uiUrl : 'https://' + uiUrl });
+  if (uxUrl) collectedLinks.push({ id: uid('l'), type: 'ux', label: 'Riset dan UX', url: uxUrl.startsWith('http') ? uxUrl : 'https://' + uxUrl });
   if (slideUrl) collectedLinks.push({ id: uid('l'), type: 'slide', label: 'Slide Presentasi', url: slideUrl.startsWith('http') ? slideUrl : 'https://' + slideUrl });
-  if (propUrl) collectedLinks.push({ id: uid('l'), type: 'proposal', label: 'Proposal & Laporan', url: propUrl.startsWith('http') ? propUrl : 'https://' + propUrl });
+  if (propUrl) collectedLinks.push({ id: uid('l'), type: 'proposal', label: 'Proposal dan Laporan', url: propUrl.startsWith('http') ? propUrl : 'https://' + propUrl });
   if (webUrl) collectedLinks.push({ id: uid('l'), type: 'website', label: 'Website Lomba', url: webUrl.startsWith('http') ? webUrl : 'https://' + webUrl });
   if (gbUrl) collectedLinks.push({ id: uid('l'), type: 'guidebook', label: 'Buku Panduan', url: gbUrl.startsWith('http') ? gbUrl : 'https://' + gbUrl });
   if (subUrl) collectedLinks.push({ id: uid('l'), type: 'submission', label: 'Formulir Pengumpulan', url: subUrl.startsWith('http') ? subUrl : 'https://' + subUrl });

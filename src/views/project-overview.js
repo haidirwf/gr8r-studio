@@ -26,10 +26,10 @@ export function projOverview(p) {
     : '';
   const links = p.links || [];
   const CORE_DELIVERABLES = [
-    { type: 'ui', label: 'Desain UI', hint: 'Figma / Prototype', icon: 'palette', color: '#f43f5e', bg: 'rgba(244, 63, 94, 0.12)' },
-    { type: 'ux', label: 'Riset & UX', hint: 'FigJam / Miro / Docs', icon: 'layers', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.12)' },
-    { type: 'slide', label: 'Slide Presentasi', hint: 'Canva / Slides / PPT', icon: 'presentation', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
-    { type: 'proposal', label: 'Proposal & Laporan', hint: 'Google Docs / PDF', icon: 'file-text', color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' },
+    { type: 'ui', label: 'Desain UI', hint: 'Figma atau Prototype', icon: 'palette', color: '#f43f5e', bg: 'rgba(244, 63, 94, 0.12)' },
+    { type: 'ux', label: 'Riset dan UX', hint: 'FigJam atau Miro', icon: 'layers', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.12)' },
+    { type: 'slide', label: 'Slide Presentasi', hint: 'Canva atau Google Slides', icon: 'presentation', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
+    { type: 'proposal', label: 'Proposal dan Laporan', hint: 'Google Docs atau PDF', icon: 'file-text', color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' },
   ];
   const otherLinks = links.filter(l => !CORE_DELIVERABLES.some(d => d.type === l.type));
 

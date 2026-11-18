@@ -144,7 +144,7 @@ export function linkMeta(type) {
       };
     case 'ux':
       return {
-        label: 'Riset & UX',
+        label: 'Riset dan UX',
         icon: 'layers',
         color: '#8b5cf6',
         bg: 'rgba(139, 92, 246, 0.12)',
@@ -160,7 +160,7 @@ export function linkMeta(type) {
       };
     case 'proposal':
       return {
-        label: 'Proposal & Laporan',
+        label: 'Proposal dan Laporan',
         icon: 'file-text',
         color: '#10b981',
         bg: 'rgba(16, 185, 129, 0.12)',

@@ -83,6 +83,9 @@ document.addEventListener('submit', e => {
 document.addEventListener('focusout', e => {
   const el = e.target;
   if (el?.dataset?.blur && BLUR[el.dataset.blur]) BLUR[el.dataset.blur](el);
+  if (['input', 'textarea'].includes(el?.tagName?.toLowerCase()) || el?.isContentEditable) {
+    window.scrollTo(0, 0);
+  }
 });
 document.addEventListener('mouseover', e => {
   const el = e.target.closest?.('[data-hover-i]');

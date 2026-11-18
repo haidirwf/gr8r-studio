@@ -14,6 +14,11 @@ export function applyPrefs() {
   r.setAttribute('data-density', p.density);
   if (p.motion === 'reduce') r.setAttribute('data-motion', 'reduce');
   else r.removeAttribute('data-motion');
+  const metas = document.querySelectorAll('meta[name="theme-color"]');
+  if (metas.length && p.theme !== 'system') {
+    const col = effectiveDark() ? '#151413' : '#fbfaf8';
+    metas.forEach(m => m.setAttribute('content', col));
+  }
 }
 export function effectiveDark() {
   if (S.prefs.theme === 'dark') return true;

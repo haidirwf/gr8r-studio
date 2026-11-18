@@ -28,10 +28,11 @@ export function projOverview(p) {
   const CORE_DELIVERABLES = [
     { type: 'ui', label: 'Desain UI', hint: 'Figma atau Prototype', icon: 'palette', color: '#f43f5e', bg: 'rgba(244, 63, 94, 0.12)' },
     { type: 'ux', label: 'Riset dan UX', hint: 'FigJam atau Miro', icon: 'layers', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.12)' },
+    { type: 'prototype', label: 'Prototype', hint: 'Figma Prototype atau Web', icon: 'play', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.12)' },
     { type: 'slide', label: 'Slide Presentasi', hint: 'Canva atau Google Slides', icon: 'presentation', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
     { type: 'proposal', label: 'Proposal dan Laporan', hint: 'Google Docs atau PDF', icon: 'file-text', color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' },
   ];
-  const otherLinks = links.filter(l => !CORE_DELIVERABLES.some(d => d.type === l.type));
+  const otherLinks = links.filter(l => !CORE_DELIVERABLES.some(d => d.type === l.type || (d.type === 'prototype' && l.label?.toLowerCase() === 'prototype')));
 
   return `<div class="page" style="max-width:1160px;padding-top:22px">
     <div class="grid2">
@@ -63,7 +64,7 @@ export function projOverview(p) {
           <div class="panel-b" style="display:flex;flex-direction:column;gap:10px">
             <div class="deliv-list">
               ${CORE_DELIVERABLES.map(d => {
-                const matched = links.find(l => l.type === d.type);
+                const matched = links.find(l => l.type === d.type || (d.type === 'prototype' && l.label?.toLowerCase() === 'prototype'));
                 if (matched) {
                   const host = formatUrlDomain(matched.url);
                   return `
@@ -92,32 +93,25 @@ export function projOverview(p) {
                   </div>
                 </div>`;
               }).join('')}
+              ${otherLinks.map(l => {
+                const meta = linkMeta(l.type);
+                const host = formatUrlDomain(l.url);
+                return `
+                <div class="deliv-row filled">
+                  <div class="deliv-left">
+                    <span class="deliv-badge-icon" style="background:${meta.bg};color:${meta.color}">${ic(meta.icon, 14)}</span>
+                    <span class="deliv-name">${esc(l.label)}</span>
+                  </div>
+                  <div class="deliv-right">
+                    <a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" class="deliv-url-btn" title="${esc(l.url)}">
+                      <span class="trunc">${esc(host || 'Buka')}</span>
+                      ${ic('arrow-up-right', 11)}
+                    </a>
+                    <button class="ibtn ibtn-xs res-del" data-a="removeProjectLink" data-pid="${p.id}" data-lid="${l.id}" title="Hapus link" aria-label="Hapus link">${ic('trash-2', 13)}</button>
+                  </div>
+                </div>`;
+              }).join('')}
             </div>
-
-            ${otherLinks.length ? `
-              <div style="border-top:1px solid var(--divider);padding-top:10px;display:flex;flex-direction:column;gap:8px">
-                <span class="faint" style="font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em">Informasi & Panduan Panitia</span>
-                ${otherLinks.map(l => {
-                  const meta = linkMeta(l.type);
-                  const host = formatUrlDomain(l.url);
-                  return `
-                  <div class="res-item">
-                    <div class="res-icon" style="background:${meta.bg};color:${meta.color}">
-                      ${ic(meta.icon, 18)}
-                    </div>
-                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
-                      <a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" class="res-link" title="${esc(l.url)}">
-                        <span class="trunc">${esc(l.label)}</span>
-                        <span style="display:inline-flex;align-items:center;color:var(--text-3);flex-shrink:0">${ic('arrow-up-right', 12)}</span>
-                      </a>
-                      ${host ? `<span style="font-size:11px;color:var(--text-3);font-family:var(--font-mono, monospace);line-height:1.2" class="trunc">${esc(host)}</span>` : ''}
-                    </div>
-                    <span class="res-badge" style="background:${meta.bg};color:${meta.color};border:1px solid ${meta.border}">${esc(meta.label)}</span>
-                    <button class="ibtn ibtn-xs res-del" data-a="removeProjectLink" data-pid="${p.id}" data-lid="${l.id}" title="Hapus link" aria-label="Hapus link">${ic('trash-2', 14)}</button>
-                  </div>`;
-                }).join('')}
-              </div>
-            ` : ''}
           </div>
         </section>
         <section class="panel"><div class="panel-h"><h2>Milestones</h2></div><div class="panel-b">${

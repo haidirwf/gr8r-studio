@@ -1490,6 +1490,7 @@ A.newProject = () => {
     tags: ['Webdev'],
     ui: '',
     ux: '',
+    prototype: '',
     slide: '',
     proposal: '',
     website: '',
@@ -1508,6 +1509,7 @@ A.editProject = el => {
   S.ui.pop = null;
   const ui = p.links?.find(l => l.type === 'ui')?.url || '';
   const ux = p.links?.find(l => l.type === 'ux')?.url || '';
+  const proto = p.links?.find(l => l.type === 'prototype' || l.label?.toLowerCase() === 'prototype')?.url || '';
   const slide = p.links?.find(l => l.type === 'slide')?.url || '';
   const proposal = p.links?.find(l => l.type === 'proposal')?.url || '';
   const web = p.links?.find(l => l.type === 'website')?.url || '';
@@ -1530,6 +1532,7 @@ A.editProject = el => {
     tags: Array.isArray(p.tags) ? [...p.tags] : [],
     ui,
     ux,
+    prototype: proto,
     slide,
     proposal,
     website: web,
@@ -1558,6 +1561,8 @@ export function syncPformFromDom() {
   if (uiEl) f.ui = uiEl.value;
   const uxEl = $('#p-link-ux');
   if (uxEl) f.ux = uxEl.value;
+  const protoEl = $('#p-link-prototype');
+  if (protoEl) f.prototype = protoEl.value;
   const slideEl = $('#p-link-slide');
   if (slideEl) f.slide = slideEl.value;
   const propEl = $('#p-link-proposal');
@@ -1633,12 +1638,19 @@ A.submitProjectLink = () => {
   }
 
   p.links = p.links || [];
-  p.links.push({
-    id: uid('l'),
-    type,
-    label,
-    url,
-  });
+  const existingIdx = p.links.findIndex(
+    l => (l.type === type && ['ui', 'ux', 'prototype', 'slide', 'proposal'].includes(type)) || (type === 'prototype' && l.label?.toLowerCase() === 'prototype'),
+  );
+  if (existingIdx >= 0) {
+    p.links[existingIdx] = { id: p.links[existingIdx].id, type, label, url };
+  } else {
+    p.links.push({
+      id: uid('l'),
+      type,
+      label,
+      url,
+    });
+  }
   save();
   closeModal();
   toast('Link added');
@@ -1755,6 +1767,7 @@ A.submitProject = () => {
 
   const uiUrl = (f.ui || $('#p-link-ui')?.value || '').trim();
   const uxUrl = (f.ux || $('#p-link-ux')?.value || '').trim();
+  const protoUrl = (f.prototype || $('#p-link-prototype')?.value || '').trim();
   const slideUrl = (f.slide || $('#p-link-slide')?.value || '').trim();
   const propUrl = (f.proposal || $('#p-link-proposal')?.value || '').trim();
   const webUrl = (f.website || $('#p-link-website')?.value || '').trim();
@@ -1766,6 +1779,7 @@ A.submitProject = () => {
   const collectedLinks = [];
   if (uiUrl) collectedLinks.push({ id: uid('l'), type: 'ui', label: 'Desain UI', url: uiUrl.startsWith('http') ? uiUrl : 'https://' + uiUrl });
   if (uxUrl) collectedLinks.push({ id: uid('l'), type: 'ux', label: 'Riset dan UX', url: uxUrl.startsWith('http') ? uxUrl : 'https://' + uxUrl });
+  if (protoUrl) collectedLinks.push({ id: uid('l'), type: 'prototype', label: 'Prototype', url: protoUrl.startsWith('http') ? protoUrl : 'https://' + protoUrl });
   if (slideUrl) collectedLinks.push({ id: uid('l'), type: 'slide', label: 'Slide Presentasi', url: slideUrl.startsWith('http') ? slideUrl : 'https://' + slideUrl });
   if (propUrl) collectedLinks.push({ id: uid('l'), type: 'proposal', label: 'Proposal dan Laporan', url: propUrl.startsWith('http') ? propUrl : 'https://' + propUrl });
   if (webUrl) collectedLinks.push({ id: uid('l'), type: 'website', label: 'Website Lomba', url: webUrl.startsWith('http') ? webUrl : 'https://' + webUrl });
@@ -1776,8 +1790,8 @@ A.submitProject = () => {
 
   if (m.edit) {
     const existingP = proj(m.edit);
-    const knownTypes = ['ui', 'ux', 'slide', 'proposal', 'website', 'guidebook', 'submission', 'group', 'social', '__tags_meta__', '__image_meta__', '__announce_meta__'];
-    const customLinks = (existingP?.links || []).filter(l => !knownTypes.includes(l.type));
+    const knownTypes = ['ui', 'ux', 'prototype', 'slide', 'proposal', 'website', 'guidebook', 'submission', 'group', 'social', '__tags_meta__', '__image_meta__', '__announce_meta__'];
+    const customLinks = (existingP?.links || []).filter(l => !knownTypes.includes(l.type) && l.label?.toLowerCase() !== 'prototype');
     collectedLinks.push(...customLinks);
   }
 

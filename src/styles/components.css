@@ -831,6 +831,7 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
+  flex: 1;
 }
 .deliv-badge-icon {
   width: 26px;
@@ -848,6 +849,8 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .deliv-right {
@@ -898,4 +901,11 @@
 .deliv-url-btn svg.i {
   display: inline-block;
   flex-shrink: 0;
+}
+.deliv-row .res-del {
+  opacity: 0.6;
+  transition: opacity var(--dur);
+}
+.deliv-row:hover .res-del {
+  opacity: 1;
 }

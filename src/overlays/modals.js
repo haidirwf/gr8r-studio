@@ -127,6 +127,7 @@ export function modalHtml(m) {
             <select class="select" id="pl-type">
               <option value="ui" ${m.presetType === 'ui' ? 'selected' : ''}>🎨 Desain UI</option>
               <option value="ux" ${m.presetType === 'ux' ? 'selected' : ''}>🧠 Riset dan Desain UX</option>
+              <option value="prototype" ${m.presetType === 'prototype' ? 'selected' : ''}>⚡ Prototype</option>
               <option value="slide" ${m.presetType === 'slide' ? 'selected' : ''}>📊 Slide Presentasi</option>
               <option value="proposal" ${m.presetType === 'proposal' ? 'selected' : ''}>📄 Proposal dan Dokumen</option>
               <option value="website" ${m.presetType === 'website' ? 'selected' : ''}>🌐 Website Resmi Lomba</option>
@@ -386,8 +387,9 @@ export function projectModal(m, H) {
       <span class="label" style="font-weight:600;color:var(--text);font-size:13px">Tautan Karya & Kebutuhan Lomba</span>
       <div class="col" style="gap:8px;margin-top:6px;min-width:0">
         <span class="faint" style="font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-top:2px">Berkas Karya Utama</span>
-        <div class="field" style="min-width:0"><label class="label" for="p-link-ui" style="font-size:12px">🎨 Desain UI</label><input class="input" id="p-link-ui" data-in="pform" data-f="ui" placeholder="https://figma.com/design/... atau link prototype" value="${esc(f.ui || '')}" autocapitalize="off" autocorrect="off"></div>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-ui" style="font-size:12px">🎨 Desain UI</label><input class="input" id="p-link-ui" data-in="pform" data-f="ui" placeholder="https://figma.com/design/... atau link desain UI" value="${esc(f.ui || '')}" autocapitalize="off" autocorrect="off"></div>
         <div class="field" style="min-width:0"><label class="label" for="p-link-ux" style="font-size:12px">🧠 Riset dan Desain UX</label><input class="input" id="p-link-ux" data-in="pform" data-f="ux" placeholder="https://figma.com/board/... atau link riset UX" value="${esc(f.ux || '')}" autocapitalize="off" autocorrect="off"></div>
+        <div class="field" style="min-width:0"><label class="label" for="p-link-prototype" style="font-size:12px">⚡ Prototype</label><input class="input" id="p-link-prototype" data-in="pform" data-f="prototype" placeholder="https://figma.com/proto/... atau link prototype interaktif" value="${esc(f.prototype || '')}" autocapitalize="off" autocorrect="off"></div>
         <div class="field" style="min-width:0"><label class="label" for="p-link-slide" style="font-size:12px">📊 Slide Presentasi</label><input class="input" id="p-link-slide" data-in="pform" data-f="slide" placeholder="https://canva.com/... atau link Google Slides" value="${esc(f.slide || '')}" autocapitalize="off" autocorrect="off"></div>
         <div class="field" style="min-width:0"><label class="label" for="p-link-proposal" style="font-size:12px">📄 Proposal dan Dokumen</label><input class="input" id="p-link-proposal" data-in="pform" data-f="proposal" placeholder="https://docs.google.com/document/... atau link PDF" value="${esc(f.proposal || '')}" autocapitalize="off" autocorrect="off"></div>
 

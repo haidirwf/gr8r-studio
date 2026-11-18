@@ -150,6 +150,14 @@ export function linkMeta(type) {
         bg: 'rgba(139, 92, 246, 0.12)',
         border: 'rgba(139, 92, 246, 0.25)',
       };
+    case 'prototype':
+      return {
+        label: 'Prototype',
+        icon: 'play',
+        color: '#06b6d4',
+        bg: 'rgba(6, 182, 212, 0.12)',
+        border: 'rgba(6, 182, 212, 0.25)',
+      };
     case 'slide':
       return {
         label: 'Slide Presentasi',

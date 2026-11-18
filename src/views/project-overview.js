@@ -60,40 +60,38 @@ export function projOverview(p) {
               <button class="btn btn-sm btn-ghost" data-a="addProjectLink" data-id="${p.id}">${ic('plus', 13)}Add Custom Link</button>
             </div>
           </div>
-          <div class="panel-b" style="display:flex;flex-direction:column;gap:14px">
-            <div>
-              <div class="deliverable-grid">
-                ${CORE_DELIVERABLES.map(d => {
-                  const matched = links.find(l => l.type === d.type);
-                  if (matched) {
-                    const host = formatUrlDomain(matched.url);
-                    return `
-                    <div class="deliv-card">
-                      <div class="deliv-icon" style="background:${d.bg};color:${d.color}">
-                        ${ic(d.icon, 18)}
-                      </div>
-                      <div class="deliv-body">
-                        <span class="deliv-title trunc" title="${esc(matched.label)}">${esc(matched.label)}</span>
-                        <a href="${esc(matched.url)}" target="_blank" rel="noopener noreferrer" class="deliv-link trunc" title="${esc(matched.url)}">
-                          <span class="trunc">${esc(host || matched.url)}</span>
-                          ${ic('arrow-up-right', 11)}
-                        </a>
-                      </div>
-                      <button class="ibtn ibtn-xs res-del" data-a="removeProjectLink" data-pid="${p.id}" data-lid="${matched.id}" title="Hapus link" aria-label="Hapus link">${ic('trash-2', 13)}</button>
-                    </div>`;
-                  }
+          <div class="panel-b" style="display:flex;flex-direction:column;gap:10px">
+            <div class="deliv-list">
+              ${CORE_DELIVERABLES.map(d => {
+                const matched = links.find(l => l.type === d.type);
+                if (matched) {
+                  const host = formatUrlDomain(matched.url);
                   return `
-                  <button type="button" class="deliv-card empty" data-a="addProjectLink" data-id="${p.id}" data-type="${d.type}" data-label="${esc(d.label)}" title="Klik untuk masukkan tautan ${esc(d.label)}">
-                    <div class="deliv-icon" style="background:${d.bg};color:${d.color}">
-                      ${ic(d.icon, 18)}
+                  <div class="deliv-row filled">
+                    <div class="deliv-left">
+                      <span class="deliv-badge-icon" style="background:${d.bg};color:${d.color}">${ic(d.icon, 14)}</span>
+                      <span class="deliv-name">${esc(d.label)}</span>
                     </div>
-                    <div class="deliv-body">
-                      <span class="deliv-title" style="font-weight:600">${esc(d.label)}</span>
-                      <span class="deliv-empty-lbl">${ic('plus', 11)} Masukkan link ${esc(d.hint)}</span>
+                    <div class="deliv-right">
+                      <a href="${esc(matched.url)}" target="_blank" rel="noopener noreferrer" class="deliv-url-btn" title="${esc(matched.url)}">
+                        <span class="trunc">${esc(host || 'Buka')}</span>
+                        ${ic('arrow-up-right', 11)}
+                      </a>
+                      <button class="ibtn ibtn-xs res-del" data-a="removeProjectLink" data-pid="${p.id}" data-lid="${matched.id}" title="Hapus link" aria-label="Hapus link">${ic('trash-2', 13)}</button>
                     </div>
-                  </button>`;
-                }).join('')}
-              </div>
+                  </div>`;
+                }
+                return `
+                <div class="deliv-row empty" data-a="addProjectLink" data-id="${p.id}" data-type="${d.type}" data-label="${esc(d.label)}" role="button" tabindex="0" title="Klik untuk masukkan tautan ${esc(d.label)} (${esc(d.hint)})">
+                  <div class="deliv-left">
+                    <span class="deliv-badge-icon" style="background:${d.bg};color:${d.color}">${ic(d.icon, 14)}</span>
+                    <span class="deliv-name">${esc(d.label)}</span>
+                  </div>
+                  <div class="deliv-right">
+                    <span class="deliv-add-btn">${ic('plus', 11)}<span>Tambah</span></span>
+                  </div>
+                </div>`;
+              }).join('')}
             </div>
 
             ${otherLinks.length ? `
